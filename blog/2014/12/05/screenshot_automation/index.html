@@ -1,0 +1,951 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Screenshots Through Automation - Flavien Laurent</title>
+  <meta name="author" content="Flavien Laurent">
+
+  
+  <meta name="description" content="One important thing when an app is released on the Play Store is to have up-to-date, beautiful and clean screenshots. In an app containing lots of &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://flavienlaurent.com/blog/2014/12/05/screenshot_automation">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Flavien Laurent" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Fjalla+One' rel='stylesheet' type='text/css'>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-43113155-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Flavien Laurent</a></h1>
+  
+    <h2>The Android Framework, step by step</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:flavienlaurent.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+	
+	<li><a href="http://github.com/flavienlaurent" title="Github Profile" target="_blank"></i>Github</a></li>
+	
+	
+	
+	<li><a href="http://twitter.com/flavienlaurent" title="Twitter Profile" target="_blank">Twitter</a></li>
+	
+	
+	<li><a href="http://plus.google.com/103561222519914490723" title="Google+ Profile" target="_blank">G+</a></li>
+	
+	
+	
+	<li><a href="/atom.xml" title="RSS" target="_blank">RSS</a></li>
+	
+	
+</ul>
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Screenshots Through Automation</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2014-12-05T21:51:00+01:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:51 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>One important thing when an app is released on the Play Store is to have up-to-date, beautiful and clean screenshots. In an app containing lots of screens, it can be painful to manually take screenshots for each release. This article describes an approach at pushing automation into the screenshot process in order to more easily achieve this.</p>
+
+<!-- more -->
+
+
+<p>Just arrived at <a href="https://www.capitainetrain.com">Capitaine Train</a>, I was asked to find a way to automatically take screenshots because we had a lot of them: 3 form factors, 4 languages, 6 screenshots = 72 screenshots. This article explains the solution we used to achieve this. 3 important parts are necessary to take screenshots like a robot: <strong>uiautomator</strong>, <strong>accessibility</strong> and <strong>bash scripting</strong>.</p>
+
+<h1>Hands on uiautomator</h1>
+
+<p>uiautomator is a framework used to manipulate the UI from some code encapsulated into a JUnit test case. One important thing to know is that those test cases are executed in a side process: <strong>they are not contained inside the tested app</strong>. You can see the uiautomator framework as an independent robot which is able to do some actions on a device like touch, scroll, take a screenshot etc.</p>
+
+<p><strong>The basics</strong></p>
+
+<p>Before continuing, the <a href="https://developer.android.com/tools/help/uiautomator">official documentation</a> is a good starting point. I highly encourage you to take some times to read it.</p>
+
+<p>The API is very simple. There are 3 classes that represents 3 types of UI element:</p>
+
+<ul>
+<li><code>UiObject</code>: a basic UI element such as <code>TextView</code></li>
+<li><code>UiCollection</code>: a UI element that contains several <code>UiObject</code> such as <code>LinearLayout</code></li>
+<li><code>UiScrollable</code>: a UI element that contains several <code>UiObject</code> and that can be scrolled such as <code>ListView</code></li>
+</ul>
+
+
+<p><img src="/media/2014-12-05-screenshot_automation/uml.png"></p>
+
+<p>There are 2 other classes you must know:</p>
+
+<ul>
+<li><code>UiDevice</code> to perform device-level actions like pressing the back button, taking a screenshot etc</li>
+<li><code>UiSelector</code> to request UI elements on a screen by id, type etc</li>
+</ul>
+
+
+<p>Finally, the most important class is <code>UiAutomatorTestCase</code> which is the class to extend from in order to create an uiautomator test case.</p>
+
+<p>You can check out some examples to be more familiar with uiautomator on the <a href="https://developer.android.com/tools/testing/testing_ui.html">official documentation</a>.</p>
+
+<p><strong>Setup, build and run</strong></p>
+
+<p>The next step to use uiautomator is to build it but at this time, there is no official Gradle integration of uiautomator module so you have to deal with it on your own. The final output of uiautomator test cases is single JAR so here is a simple setup.</p>
+
+<ul>
+<li>Create a new <code>java</code> Gradle module in your existing project and use the same <code>android.jar</code> dependency as in the entire project using <code>local.properties</code>.</li>
+</ul>
+
+
+<figure class='code'><figcaption><span>build.gradle</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">apply</span> <span class="nl">plugin:</span> <span class="err">&#39;</span><span class="n">java</span><span class="err">&#39;</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">Properties</span> <span class="n">props</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Properties</span><span class="o">()</span>
+</span><span class='line'><span class="n">props</span><span class="o">.</span><span class="na">load</span><span class="o">(</span><span class="k">new</span> <span class="nf">FileInputStream</span><span class="o">(</span><span class="n">file</span><span class="o">(</span><span class="s">&quot;../local.properties&quot;</span><span class="o">)))</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">dependencies</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">compile</span> <span class="nf">fileTree</span><span class="o">(</span><span class="nl">dir:</span> <span class="n">props</span><span class="o">[</span><span class="err">&#39;</span><span class="n">sdk</span><span class="o">.</span><span class="na">dir</span><span class="err">&#39;</span><span class="o">]</span> <span class="o">+</span> <span class="err">&#39;</span><span class="o">/</span><span class="n">platforms</span><span class="o">/</span><span class="err">&#39;</span> <span class="o">+</span> <span class="n">androidSdkTarget</span><span class="o">,</span> <span class="nl">include:</span> <span class="err">&#39;</span><span class="o">*.</span><span class="na">jar</span><span class="err">&#39;</span><span class="o">)</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>Create a new ant build file using <code>local.properties</code> and <code>gradle.properties</code> to have the same configuration (target, sdk path) as the whole project</li>
+</ul>
+
+
+<figure class='code'><figcaption><span>build.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="cp">&lt;?xml version=&quot;1.0&quot; encoding=&quot;UTF-8&quot;?&gt;</span>
+</span><span class='line'><span class="nt">&lt;project</span> <span class="na">name=</span><span class="s">&quot;uiautomator&quot;</span> <span class="na">default=</span><span class="s">&quot;help&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;loadproperties</span> <span class="na">srcFile=</span><span class="s">&quot;../local.properties&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;loadproperties</span> <span class="na">srcFile=</span><span class="s">&quot;gradle.properties&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;property</span> <span class="na">name=</span><span class="s">&quot;target&quot;</span> <span class="na">value=</span><span class="s">&quot;${androidSdkTarget}&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'>    <span class="nt">&lt;import</span> <span class="na">file=</span><span class="s">&quot;${sdk.dir}/tools/ant/uibuild.xml&quot;</span> <span class="nt">/&gt;</span>
+</span><span class='line'><span class="nt">&lt;/project&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>Build the JAR using ant (don&rsquo;t use Gradle), push it on the device and run your test case</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="nv">$ </span>ant build
+</span><span class='line'><span class="nv">$ </span>adb push uiautomator.jar data/local/tmp
+</span><span class='line'><span class="nv">$ </span>adb shell uiautomator runtest uiautomator.jar -c com.your.TestCase
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>Walking through the Settings app</strong></p>
+
+<p>Now, I&rsquo;m going to explain how to navigate and change items (in particular, switching from one language to another) in the Settings. First, it&rsquo;s a good way to practice uiautomator. Secondly, it&rsquo;s one of the keys to automate things. <em>Keep in mind that it&rsquo;s one way to do it but it&rsquo;s not the only one and it works on a real device in English(US) with Lollipop 5.0.0</em></p>
+
+<ul>
+<li>Open quick settings</li>
+</ul>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mUiDevice</span><span class="o">.</span><span class="na">openQuickSettings</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>Click the settings button to open Settings apps</li>
+</ul>
+
+
+<p><img src="/media/2014-12-05-screenshot_automation/settings_button.png"></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">new</span> <span class="nf">UiObject</span><span class="o">(</span><span class="k">new</span> <span class="nf">UiSelector</span><span class="o">().</span><span class="na">resourceId</span><span class="o">(</span><span class="s">&quot;com.android.systemui:id/settings_button&quot;</span><span class="o">)).</span><span class="na">click</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>As there is not any usable view ids in the Settings app, we have to find and click the language item by text. Hence, we scroll to the item (a <code>FrameLayout</code>) and click on it.</li>
+</ul>
+
+
+<p><img src="/media/2014-12-05-screenshot_automation/settings_app.png"></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">UiScrollable</span> <span class="n">scrollable</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">UiScrollable</span><span class="o">(</span><span class="k">new</span> <span class="nf">UiSelector</span><span class="o">().</span><span class="na">resourceId</span><span class="o">(</span><span class="s">&quot;com.android.settings:id/dashboard&quot;</span><span class="o">));</span>
+</span><span class='line'><span class="n">scrollable</span><span class="o">.</span><span class="na">getChildByText</span><span class="o">(</span><span class="k">new</span> <span class="nf">UiSelector</span><span class="o">().</span><span class="na">className</span><span class="o">(</span><span class="n">FrameLayout</span><span class="o">.</span><span class="na">class</span><span class="o">),</span> <span class="s">&quot;Language &amp; input&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">).</span><span class="na">click</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>The exact same &ldquo;find and click&rdquo; principle is used on the &ldquo;Language&rdquo; item (a <code>LinearLayout</code>) contained in a <code>ListView</code></li>
+</ul>
+
+
+<p><img src="/media/2014-12-05-screenshot_automation/settings_language.png"></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">UiScrollable</span> <span class="n">scrollable</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">UiScrollable</span><span class="o">(</span><span class="k">new</span> <span class="nf">UiSelector</span><span class="o">().</span><span class="na">className</span><span class="o">(</span><span class="n">ListView</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+</span><span class='line'><span class="n">scrollable</span><span class="o">.</span><span class="na">getChildByText</span><span class="o">(</span><span class="k">new</span> <span class="nf">UiSelector</span><span class="o">().</span><span class="na">className</span><span class="o">(</span><span class="n">LinearLayout</span><span class="o">.</span><span class="na">class</span><span class="o">),</span> <span class="s">&quot;Language&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">).</span><span class="na">click</span><span class="o">();</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li>Finally, the target language is chosen</li>
+</ul>
+
+
+<p><img src="/media/2014-12-05-screenshot_automation/settings_language_selection.png"></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">UiScrollable</span> <span class="n">scrollable</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">UiScrollable</span><span class="o">(</span><span class="k">new</span> <span class="nf">UiSelector</span><span class="o">().</span><span class="na">className</span><span class="o">(</span><span class="n">ListView</span><span class="o">.</span><span class="na">class</span><span class="o">));</span>
+</span><span class='line'><span class="n">scrollable</span><span class="o">.</span><span class="na">getChildByText</span><span class="o">(</span><span class="k">new</span> <span class="nf">UiSelector</span><span class="o">().</span><span class="na">className</span><span class="o">(</span><span class="n">LinearLayout</span><span class="o">.</span><span class="na">class</span><span class="o">),</span> <span class="s">&quot;Français (France)&quot;</span><span class="o">,</span> <span class="kc">true</span><span class="o">).</span><span class="na">click</span><span class="o">();</span>
+</span><span class='line'><span class="n">Locale</span><span class="o">.</span><span class="na">setDefault</span><span class="o">(</span><span class="k">new</span> <span class="nf">Locale</span><span class="o">(</span><span class="s">&quot;fr&quot;</span><span class="o">));</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em>You need to force the new locale to avoid the uiautomator process to keep a cache of some translations.</em></p>
+
+<p><strong>A few tips</strong></p>
+
+<ul>
+<li><p><strong>DEACTIVATE ALL ANIMATIONS</strong> on the device when you&rsquo;re using uiautomator to ensure stability (you can do it via <em>Settings > Developer options > Window animation|Transition animation|Animator duration scale</em>)</p></li>
+<li><p>Use <a href="https://developer.android.com/reference/android/util/Log.html">android.util.Log</a> if you want to log stuff; they appear in logcat so use a specific tag for filtering</p></li>
+<li><p>Use <code>uiautomatorviewer</code> every time to dig into the view hierarchy. It will help you to build more accurate selector to target UI elements (the <code>uiautomatorviewer</code> is located in <code>sdk/tools/uiautomatorviewer</code>)</p></li>
+<li><p>Remember uiautomator test cases are not Android test cases so you have not any <code>Context</code> to play with</p></li>
+<li><p>Note that you can&rsquo;t access to your app classes, you can only reference the Android framework classes</p></li>
+<li><p>You can pass parameter from the uiautomator command line to the test case class using <code>-e key value</code> in command line and <a href="https://developer.android.com/tools/help/uiautomator/UiAutomatorTestCase.html"><code>UiAutomatorTestCase.html#getParams()</code></a> in the test case classe.</p></li>
+</ul>
+
+
+<p>Switch from one language to another in the same test case without any manual human interaction is simple, isn&rsquo;t it !? uiautomator is a great tool but it doesn&rsquo;t help much if your app is not accessible enough. Sometimes, it is required to create completely custom views and problems may arise.</p>
+
+<h1>Making a custom view accessible</h1>
+
+<p>Accessibility is an important feature for an app for two main reasons. First, some people requires it (too many developers unfortunately forget it). Secondly, all of the uiautomator tooling is based on accessibility.</p>
+
+<p>When developing on Android, you most of the time have nothing in particular to make your app accessible. Indeed, standard framework components like <code>TextView</code>, <code>ListView</code>, etc. already deal with accessibility. However, there are some certain cases where you have to do a little more work. This is mainly when using custom views.</p>
+
+<p>In the <a href="https://www.capitainetrain.com">Capitaine Train</a> app, we built a custom view when designing the calendar. It is based on a <code>ListView</code> filled with several custom views each of them representing a month (<code>MonthView</code>). A <code>MonthView</code> is a pure <code>View</code> i.e. it directly extends from <code>View</code> and have no children. As a consequence, everything (days, selector, etc.) is drawn manually in the <code>onDraw(Canvas)</code> method. Because of it, <code>MonthView</code> is not accessible at all by default and so is the whole calendar.</p>
+
+<p>The first thing to do is really simple. It consists of setting a content description for each month using the <a href="https://developer.android.com/reference/android/view/View.html#setContentDescription">View#setContentDescription</a> method. It will help us scroll the <code>ListView</code> to a particular month.</p>
+
+<p>Then, once the <code>ListView</code> is positioned on a given month, we want to be able to touch a precise day. In order to do that, we need to make the <code>MonthView</code> content accessible. The Android support library offers a useful helper in that matter: <a href="https://developer.android.com/reference/android/support/v4/widget/ExploreByTouchHelper.html">ExploreByTouchHelper</a>.
+As a <code>MonthView</code> is not a tree of views, the technique involves creating a fake logical tree of views based on touch responsiveness.</p>
+
+<p><strong>Implement <code>ExploreByTouchHelper</code> for your custom view</strong></p>
+
+<p>There are 4 methods to implement:</p>
+
+<ul>
+<li><code>getVirtualViewAt(float x, float y)</code></li>
+</ul>
+
+
+<p>Return the virtual view id at this <code>x</code> and <code>y</code> or <code>ExploreByTouchHelper.INVALID_ID</code> if there is no virtual view</p>
+
+<ul>
+<li><code>getVisibleVirtualViews(List&lt;Integer&gt; virtualViewIds)</code></li>
+</ul>
+
+
+<p>Fill the <code>virtualViewIds</code> with all virtual view ids in the custom view</p>
+
+<ul>
+<li><code>onPopulateEventForVirtualView(int virtualViewId, AccessibilityEvent event)</code></li>
+</ul>
+
+
+<p>Fill the accessibility even with virtual view information such as text or content description</p>
+
+<ul>
+<li><code>onPopulateNodeForVirtualView(int virtualViewId, AccessibilityNodeInfo node)</code></li>
+</ul>
+
+
+<p>Fill the accessibility node with the virtual view id informations such as text, content description, class name, bounds in parent. If there are possible interactions with this virtual view, you have to specify it on the accessibility node.</p>
+
+<ul>
+<li><code>onPerformActionForVirtualView(int virtualViewId, int action, Bundle arguments)</code></li>
+</ul>
+
+
+<p>Perform an action (specified in the previous method) on virtual view</p>
+
+<p>How to make <code>ExploreByTouchHelper</code> implementation easier:</p>
+
+<ul>
+<li>create a <code>VirtualView</code> class to maintain virtual view informations such as id, text, content description, bounds in parent.</li>
+<li>use a list of <code>VirtualView</code> in your custom view. Initialize it as soon as possible and update virtual views on drawing pass</li>
+</ul>
+
+
+<figure class='code'><figcaption><span>YourAccessibilityTouchHelper.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="kd">class</span> <span class="nc">YourAccessibilityTouchHelper</span> <span class="kd">extends</span> <span class="n">ExploreByTouchHelper</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="nf">YourAccessibilityTouchHelper</span><span class="o">(</span><span class="n">View</span> <span class="n">forView</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">super</span><span class="o">(</span><span class="n">forView</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">int</span> <span class="nf">getVirtualViewAt</span><span class="o">(</span><span class="kt">float</span> <span class="n">x</span><span class="o">,</span> <span class="kt">float</span> <span class="n">y</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">final</span> <span class="n">VirtualView</span> <span class="n">vw</span> <span class="o">=</span> <span class="n">findVirtualViewByPosition</span><span class="o">(</span><span class="n">x</span><span class="o">,</span> <span class="n">y</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">vw</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">return</span> <span class="n">ExploreByTouchHelper</span><span class="o">.</span><span class="na">INVALID_ID</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">vw</span><span class="o">.</span><span class="na">id</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">getVisibleVirtualViews</span><span class="o">(</span><span class="n">List</span><span class="o">&lt;</span><span class="n">Integer</span><span class="o">&gt;</span> <span class="n">virtualViewIds</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">for</span> <span class="o">(</span><span class="kt">int</span> <span class="n">i</span> <span class="o">=</span> <span class="mi">0</span><span class="o">;</span> <span class="n">i</span> <span class="o">&lt;</span> <span class="n">mVirtualViews</span><span class="o">.</span><span class="na">size</span><span class="o">();</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="n">mVirtualViews</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">mVirtualViews</span><span class="o">.</span><span class="na">get</span><span class="o">(</span><span class="n">i</span><span class="o">).</span><span class="na">id</span><span class="o">);</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onPopulateEventForVirtualView</span><span class="o">(</span><span class="kt">int</span> <span class="n">virtualViewId</span><span class="o">,</span> <span class="n">AccessibilityEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">final</span> <span class="n">VirtualDayView</span> <span class="n">vw</span> <span class="o">=</span> <span class="n">findVirtualViewById</span><span class="o">(</span><span class="n">virtualViewId</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">vw</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">return</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>        <span class="n">event</span><span class="o">.</span><span class="na">getText</span><span class="o">().</span><span class="na">add</span><span class="o">(</span><span class="n">vw</span><span class="o">.</span><span class="na">description</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onPopulateNodeForVirtualView</span><span class="o">(</span><span class="kt">int</span> <span class="n">virtualViewId</span><span class="o">,</span> <span class="n">AccessibilityNodeInfoCompat</span> <span class="n">node</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">final</span> <span class="n">VirtualDayView</span> <span class="n">vw</span> <span class="o">=</span> <span class="n">findVirtualViewById</span><span class="o">(</span><span class="n">virtualViewId</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">if</span> <span class="o">(</span><span class="n">vw</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>            <span class="k">return</span><span class="o">;</span>
+</span><span class='line'>        <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setText</span><span class="o">(</span><span class="n">Integer</span><span class="o">.</span><span class="na">toString</span><span class="o">(</span><span class="n">vw</span><span class="o">.</span><span class="na">text</span><span class="o">));</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setContentDescription</span><span class="o">(</span><span class="n">vw</span><span class="o">.</span><span class="na">description</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setClassName</span><span class="o">(</span><span class="n">vw</span><span class="o">.</span><span class="na">className</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">node</span><span class="o">.</span><span class="na">setBoundsInParent</span><span class="o">(</span><span class="n">vw</span><span class="o">.</span><span class="na">boundsInParent</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>Use the helper in your custom view</strong></p>
+
+<ul>
+<li>implement <code>dispatchHoverEvent(MotionEvent event)</code> to activate touch exploration</li>
+<li>we need <code>setAccessibilityDelegate()</code> method to re-set the delegate after each <code>ListView.getView</code> because of <a href="https://android.googlesource.com/platform/frameworks/base/+/refs/heads/master/core/java/android/widget/AbsListView.java#6780">this</a> <em>(If your custom view is not used in a <code>ListView</code> just set the delegate in the constructor)</em></li>
+</ul>
+
+
+<figure class='code'><figcaption><span>YourCustomView.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">YourCustomView</span> <span class="kd">extends</span> <span class="n">View</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">private</span> <span class="kd">final</span> <span class="n">YourAccessibilityTouchHelper</span> <span class="n">mTouchHelper</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="nf">YourCustomView</span><span class="o">(</span><span class="n">Context</span> <span class="n">context</span><span class="o">,</span> <span class="n">AttributeSet</span> <span class="n">attrs</span><span class="o">,</span> <span class="kt">int</span> <span class="n">defStyle</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kd">super</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">attrs</span><span class="o">,</span> <span class="n">defStyle</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">mTouchHelper</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">YourAccessibilityTouchHelper</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  
+</span><span class='line'>  <span class="kd">private</span> <span class="kt">void</span> <span class="nf">setAccessibilityDelegate</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">setAccessibilityDelegate</span><span class="o">(</span><span class="n">mTouchHelper</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="o">[...]</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">dispatchHoverEvent</span><span class="o">(</span><span class="n">MotionEvent</span> <span class="n">event</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">mTouchHelper</span><span class="o">.</span><span class="na">dispatchHoverEvent</span><span class="o">(</span><span class="n">event</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>          <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">dispatchHoverEvent</span><span class="o">(</span><span class="n">event</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>Use <code>uiautmatorviewer</code> to check your implementation</strong></p>
+
+<p>If everything is ok, when your take a screenshot using the <code>uiautmatorviewer</code> tool, you should see the fake hierarchy of views with all of the provided informations set in accessibility nodes.</p>
+
+<p><img src="/media/2014-12-05-screenshot_automation/accessibility_calendar_uiautomator.png"></p>
+
+<!-- NOTE : Ça change quelque chose ? On s'en fout du class name en vrai ? Ça compte pas dans l'accessibilité non ? -->
+
+
+<p>On a side note, I just found a problem in Capitaine Train&rsquo;s app while writing this blog post. The class name on each virtual view is <code>com.capitainetrain.x</code> because we forgot Proguard :)</p>
+
+<p>Now, all of the app is accessible and, as a direct consequence, uiautomator usable, let&rsquo;s automatically take some beautiful screenshots like a boss.</p>
+
+<h1>Taking beautiful screenshots</h1>
+
+<p>The final part of this article explains how to push uiautomator to the next level to take polished screenshots of your app in multiple languages. It consists in 2 steps: first, use bash scripting to run your uiautomator screenshot test case as many times as you want and polish those screenshots using imagemagick.</p>
+
+<p>First thing to do is to build and push the uiautomator JAR, and then run the test case. As you know how to switch from one language to another inside a test case, you can pass 2 arguments to the test case: the current language to go through the Settings app and the new target language to switch on.</p>
+
+<figure class='code'><figcaption><span>screenshot.sh</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'><span class="c"># Build and push the uiautomator JAR</span>
+</span><span class='line'>ant build
+</span><span class='line'>adb push bin/uiautomator.jar data/local/tmp
+</span><span class='line'>
+</span><span class='line'>adb shell uiautomator runtest uiautomator.jar
+</span><span class='line'>  -e current_language <span class="k">${</span><span class="nv">currentLanguage</span><span class="k">}</span>
+</span><span class='line'>  -e new_language <span class="k">${</span><span class="nv">newLanguage</span><span class="k">}</span>
+</span><span class='line'>  -c com.your.TestCase
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Let&rsquo;s say we have a simple test case which switches language, opens an app and takes a screenshot.</p>
+
+<figure class='code'><figcaption><span>TestCase.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">TestCase</span> <span class="kd">extends</span> <span class="n">UiAutomatorTestCase</span> <span class="o">{</span>
+</span><span class='line'>  <span class="o">[...]</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>    <span class="kd">protected</span> <span class="kt">void</span> <span class="nf">setUp</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="kd">super</span><span class="o">.</span><span class="na">setUp</span><span class="o">();</span>
+</span><span class='line'>        <span class="kd">final</span> <span class="n">Bundle</span> <span class="n">params</span> <span class="o">=</span> <span class="n">getParams</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">mCurrentLanguage</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">&quot;current_language&quot;</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">mNewLanguage</span> <span class="o">=</span> <span class="n">params</span><span class="o">.</span><span class="na">getString</span><span class="o">(</span><span class="s">&quot;new_language&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kd">public</span> <span class="kt">void</span> <span class="nf">test</span><span class="o">()</span> <span class="kd">throws</span> <span class="n">Exception</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">switchLanguage</span><span class="o">(</span><span class="n">mCurrentLanguage</span><span class="o">,</span> <span class="n">mNewLanguage</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">openApp</span><span class="o">();</span>
+</span><span class='line'>        <span class="n">takeScreenshot</span><span class="o">(</span><span class="s">&quot;data/local/tmp/screenshots&quot;</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ul>
+<li><p><code>switchLanguage(String,String)</code> can be easily implemented using the method I explained in the &ldquo;Hands on uiautomator&rdquo; part.</p></li>
+<li><p><code>openApp()</code> is explained <a href="https://developer.android.com/tools/testing/testing_ui.html#sample">here</a></p></li>
+<li><p><code>takeScreenshot()</code> uses <code>UiDevice#takeScreenshot</code>. <strong>Just a small tip: if an app contains scrollable parts, we have to wait for a short period time (with <code>UiAutomatorTestCase.sleep</code> or <code>SystemClock.sleep</code>) until scrollbars disappear else they will be visible on your final screenshots.</strong></p></li>
+</ul>
+
+
+<p>Now screenshots are stored on the device, we only need to pull them.</p>
+
+<figure class='code'><figcaption><span>screenshot.sh</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>mkdir screenshots
+</span><span class='line'>adb pull data/local/tmp/screenshots screenshots
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Run the test case on multiple languages. It starts from a given current language of the device because there is not a proper way to get it programmatically and then it runs the test case for each language.</p>
+
+<figure class='code'><figcaption><span>screenshot.sh</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>screenshot<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nv">currentLanguage</span><span class="o">=</span><span class="nv">$1</span>
+</span><span class='line'>  <span class="nv">newLanguage</span><span class="o">=</span><span class="nv">$2</span>
+</span><span class='line'>  adb shell uiautomator runtest uiautomator.jar
+</span><span class='line'>      -e current_language <span class="k">${</span><span class="nv">currentLanguage</span><span class="k">}</span>
+</span><span class='line'>      -e new_language <span class="k">${</span><span class="nv">newLanguage</span><span class="k">}</span>
+</span><span class='line'>      -c com.your.TestCase
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>screenshot <span class="nv">$deviceLanguage</span> fr
+</span><span class='line'>screenshot fr en
+</span><span class='line'>screenshot en de
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The app can be uninstalled/installed for each uiautomator test case run to start the test in the same conditions (i.e. from scratch) every time.</p>
+
+<figure class='code'><figcaption><span>screenshot.sh</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>screenshot<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="nv">currentLanguage</span><span class="o">=</span><span class="nv">$1</span>
+</span><span class='line'>  <span class="nv">newLanguage</span><span class="o">=</span><span class="nv">$2</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c"># Uninstall/Install the app</span>
+</span><span class='line'>  adb uninstall com.your.app
+</span><span class='line'>  adb install ../app/build/outputs/apk/yourapp-release.apk
+</span><span class='line'>  
+</span><span class='line'>  adb shell uiautomator runtest uiautomator.jar
+</span><span class='line'>      -e current_language <span class="k">${</span><span class="nv">currentLanguage</span><span class="k">}</span>
+</span><span class='line'>      -e new_language <span class="k">${</span><span class="nv">newLanguage</span><span class="k">}</span>
+</span><span class='line'>      -c com.your.TestCase
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Finally, all things together.</p>
+
+<figure class='code'><figcaption><span>screenshot.sh</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>screenshot<span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nv">currentLanguage</span><span class="o">=</span><span class="nv">$1</span>
+</span><span class='line'>  <span class="nv">newLanguage</span><span class="o">=</span><span class="nv">$2</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="c"># Uninstall/Install the app</span>
+</span><span class='line'>  adb uninstall com.your.app
+</span><span class='line'>  adb install ../app/build/outputs/apk/yourapp-release.apk
+</span><span class='line'>
+</span><span class='line'>  <span class="c"># Run the test case</span>
+</span><span class='line'>  adb shell uiautomator runtest uiautomator.jar
+</span><span class='line'>      -e current_language <span class="k">${</span><span class="nv">currentLanguage</span><span class="k">}</span>
+</span><span class='line'>      -e new_language <span class="k">${</span><span class="nv">newLanguage</span><span class="k">}</span>
+</span><span class='line'>      -c com.your.TestCase
+</span><span class='line'>      
+</span><span class='line'>  mkdir screenshots
+</span><span class='line'>  adb pull data/local/tmp/screenshots screenshots
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="c"># Build and push the uiautomator JAR</span>
+</span><span class='line'>ant build
+</span><span class='line'>adb push bin/uiautomator.jar data/local/tmp
+</span><span class='line'>
+</span><span class='line'><span class="c"># Build the APK</span>
+</span><span class='line'><span class="nb">cd</span> .. <span class="o">&amp;&amp;</span> ./gradlew assembleRelease <span class="o">&amp;&amp;</span> <span class="nb">cd </span>uiautomator
+</span><span class='line'>
+</span><span class='line'><span class="c"># Screenshot everything</span>
+</span><span class='line'>screenshot <span class="nv">$currentLanguage</span> fr
+</span><span class='line'>screenshot fr en
+</span><span class='line'>screenshot en de
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>Screenshot polishing</strong></p>
+
+<p>Good read: <a href="http://cyrilmottier.com/2012/07/11/creating-professional-looking-screenshots/">Creating professional looking screenshots</a></p>
+
+<p>Your app screenshots must be as polished as possible because it&rsquo;s the first thing the user look at on the Play Store. Most of the time, the user doesn&rsquo;t read an app description but goes straight to your app&rsquo;s screenshots. There is no need to say the best the screenshot experience is, the better. A great way to ensure this is to follow some simple rules:</p>
+
+<ul>
+<li>Always have a clean status bar</li>
+<li>Remove navigation bar</li>
+<li>Bundle several screen sizes: 5, 7, 9|10</li>
+</ul>
+
+
+<p>The 2 first points can be easily achieved with an amazing tool called: <em>imagemagick</em>. The <a href="http://www.imagemagick.org/script/command-line-tools.php">official documentation</a> is very large so we are going to focus on 2 features: <em>composite</em> and <em>convert</em>.</p>
+
+<p><strong>Clean the status bar with <em>composite</em></strong></p>
+
+<p><em>composite</em> is used to overlap one image over another. It&rsquo;s perfect to put a clean status bar on top of a screenshot.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>composite -quality <span class="m">100</span> -compose atop clean_status_bar.png screenshot.png clean_screenshot.png
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><strong>Crop the navigation bar with <em>convert</em></strong></p>
+
+<p><em>convert</em> is used to convert between image formats as well as crop an image. It&rsquo;s perfect to remove the navigation bar on bottom of a screenshot.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='bash'><span class='line'>convert -quality <span class="m">100</span> screenshot.png -gravity South -chop 0x144 clean_screenshot.png
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><em>144 is the size in px of the navigation bar on a Nexus 5.</em></p>
+
+<h1>Conclusion</h1>
+
+<p>Since the introduction of this new automatic screenshot tooling at Capitaine Train, 20~30min were spend on taking screenshots while it was sometimes taking us half a day or almost a day before (i.e. nobody wanted to do that and screenshots were almost never updated). The save in time is clearly huge and significant and clearly worth the time spent at developing the tool. In addition to that, it is less error-prone and less painful.</p>
+
+<p>Some of the possible next steps are:</p>
+
+<ul>
+<li>Use the <a href="https://developers.google.com/android-publisher/#publishing">Google Play Publishing API</a> to easily upload the generated screenshots</li>
+<li>Integrate this tool into Jenkins to take screenshots on each release build</li>
+</ul>
+
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Flavien Laurent</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2014-12-05T21:51:00+01:00'><span class='date'><span class='date-month'>Dec</span> <span class='date-day'>5</span><span class='date-suffix'>th</span>, <span class='date-year'>2014</span></span> <span class='time'>9:51 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/accessibility/'>accessibility</a>, <a class='category' href='/blog/categories/screenshot/'>screenshot</a>, <a class='category' href='/blog/categories/uiautomator/'>uiautomator</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://flavienlaurent.com/blog/2014/12/05/screenshot_automation/" data-via="flavienlaurent" data-counturl="http://flavienlaurent.com/blog/2014/12/05/screenshot_automation/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2014/01/31/spans/" title="Previous Post: Spans, a powerful concept.">&laquo; Spans, a powerful concept.</a>
+      
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/12/05/screenshot_automation/">Screenshots Through Automation</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/31/spans/">Spans, a Powerful Concept.</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/11/20/making-your-action-bar-not-boring/">Making Your ActionBar Not Boring</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper/">Each Navigation Drawer Hides a ViewDragHelper</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/">ViewOverlay: When, How and for What Purpose?</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/flavienlaurent">@flavienlaurent</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'flavienlaurent',
+            count: 2,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+<section class="googleplus">
+  <h1>
+    <a href="https://plus.google.com/103561222519914490723?rel=author">
+      <img src="http://www.google.com/images/icons/ui/gprofile_button-32.png" width="32" height="32">
+      Google+
+    </a>
+  </h1>
+</section>
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - Flavien Laurent -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'flavienlaurent';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://flavienlaurent.com/blog/2014/12/05/screenshot_automation/';
+        var disqus_url = 'http://flavienlaurent.com/blog/2014/12/05/screenshot_automation/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

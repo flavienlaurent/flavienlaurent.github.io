@@ -1,0 +1,820 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>ViewOverlay: When, How and for What Purpose? - Flavien Laurent</title>
+  <meta name="author" content="Flavien Laurent">
+
+  
+  <meta name="description" content="In Android 4.3, a new feature for developer has been added: Overlays. When announcing this feature, the first thing I did was looking at the source &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://flavienlaurent.com/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Flavien Laurent" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Fjalla+One' rel='stylesheet' type='text/css'>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-43113155-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Flavien Laurent</a></h1>
+  
+    <h2>The Android Framework, step by step</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:flavienlaurent.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+	
+	<li><a href="http://github.com/flavienlaurent" title="Github Profile" target="_blank"></i>Github</a></li>
+	
+	
+	
+	<li><a href="http://twitter.com/flavienlaurent" title="Twitter Profile" target="_blank">Twitter</a></li>
+	
+	
+	<li><a href="http://plus.google.com/103561222519914490723" title="Google+ Profile" target="_blank">G+</a></li>
+	
+	
+	
+	<li><a href="/atom.xml" title="RSS" target="_blank">RSS</a></li>
+	
+	
+</ul>
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">ViewOverlay: When, How and for What Purpose?</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-08-14T12:19:00+02:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>12:19 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>In Android 4.3, a new feature for developer has been added: Overlays. When announcing this feature, the first thing I did was looking at the source code to understand how it works. Right after, I tried to find good use cases to fully exploit the potential of this feature.
+So in this post, I&rsquo;m going to tell you more about this useful feature.</p>
+
+<!--more-->
+
+
+<p><em>Obviously, you must install the following apk on Android 4.3</em></p>
+
+<p><a href="http://flavienlaurent.com/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/sample.apk">Download Sample Application</a></p>
+
+<h1>Overlays, how it works ?</h1>
+
+<h2>In a few words</h2>
+
+<p>The official documentation about overlays is quite clear and you should <a href="http://developer.android.com/reference/android/view/ViewOverlay.html">read it</a>. For more details, you can read this <a href="http://graphics-geek.blogspot.fr/2013/07/new-in-android-43-viewoverlay.html">Chet Haase&rsquo;s post</a>.</p>
+
+<p>Important points to remember about overlays:</p>
+
+<ul>
+<li>two types of overlays : ViewOverlay (for Views) and ViewGroupOverlay (for ViewGroups)</li>
+<li>two methods to retrieve a view overlay : <code>View.getViewOverlay</code> / <code>ViewGroup.getViewGroupOverlay</code></li>
+<li>you can add/remove a <strong>drawable</strong> in ViewOverlay and ViewGroupOverlay</li>
+<li>you can add/remove a <strong>view</strong> in ViewGroupOverlay</li>
+<li>the documentation says <code>An overlay [...] on top of a View [...] drawn after all other content in that view [...]</code></li>
+<li>Chet Haase&rsquo;s said <code>[...] you are responsible for positioning/sizing the views/drawables where you want them in the overlay [...]</code></li>
+</ul>
+
+
+<h2>Reading the source code</h2>
+
+<p>Let&rsquo;s start by looking at the <code>View.getViewOverlay</code>/ <code>View.getViewGroupOverlay</code> methods.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="n">ViewOverlay</span> <span class="nf">getOverlay</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">mOverlay</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">mOverlay</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ViewOverlay</span><span class="o">(</span><span class="n">mContext</span><span class="o">,</span> <span class="k">this</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">mOverlay</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="n">ViewGroupOverlay</span> <span class="nf">getOverlay</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">mOverlay</span> <span class="o">==</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">mOverlay</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">ViewGroupOverlay</span><span class="o">(</span><span class="n">mContext</span><span class="o">,</span> <span class="k">this</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="o">(</span><span class="n">ViewGroupOverlay</span><span class="o">)</span> <span class="n">mOverlay</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>A ViewOverlay/ViewGroupOverlay is created when the get method is called.</p>
+
+<p>How ViewOverlay/ViewGroupOverlay works?
+<em>Note that a ViewGroupOverlay extends ViewOverlay, so we can focus on the ViewOverlay implementation</em></p>
+
+<p><a href="https://android.googlesource.com/platform/frameworks/base/+/refs/heads/master/core/java/android/view/ViewOverlay.java">ViewOverlay.java</a></p>
+
+<p>ViewOverlay implementation is based on a OverlayViewGroup (static inner class in ViewOverlay). The OverlayViewGroup extends ViewGroup and contains a list of drawables. As you can see, there isn&rsquo;t any method to layout drawables or child views that&rsquo;s why you are responsible for positioning/sizing them.</p>
+
+<p>Two more interesting things :</p>
+
+<ol>
+<li>the documentation says <code>view will be repositioned such that it is in the same relative location inside the activity</code>.</li>
+</ol>
+
+
+<figure class='code'><figcaption><span>OverlayViewGroup.add(View child)</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kt">int</span><span class="o">[]</span> <span class="n">parentLocation</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">2</span><span class="o">];</span>
+</span><span class='line'><span class="kt">int</span><span class="o">[]</span> <span class="n">hostViewLocation</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">2</span><span class="o">];</span>
+</span><span class='line'><span class="n">parent</span><span class="o">.</span><span class="na">getLocationOnScreen</span><span class="o">(</span><span class="n">parentLocation</span><span class="o">);</span>
+</span><span class='line'><span class="n">mHostView</span><span class="o">.</span><span class="na">getLocationOnScreen</span><span class="o">(</span><span class="n">hostViewLocation</span><span class="o">);</span>
+</span><span class='line'><span class="n">child</span><span class="o">.</span><span class="na">offsetLeftAndRight</span><span class="o">(</span><span class="n">parentLocation</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">-</span> <span class="n">hostViewLocation</span><span class="o">[</span><span class="mi">0</span><span class="o">]);</span>
+</span><span class='line'><span class="n">child</span><span class="o">.</span><span class="na">offsetTopAndBottom</span><span class="o">(</span><span class="n">parentLocation</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">-</span> <span class="n">hostViewLocation</span><span class="o">[</span><span class="mi">1</span><span class="o">]);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<ol>
+<li>all invalidation calls on a OverlayViewGroup are forwarded to its host view <code>because the overlay is not a child of the host view and invalidation cannot therefore follow the normal path up through the parent hierarchy</code></li>
+</ol>
+
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">invalidate</span><span class="o">(</span><span class="n">Rect</span> <span class="n">dirty</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">super</span><span class="o">.</span><span class="na">invalidate</span><span class="o">(</span><span class="n">dirty</span><span class="o">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">mHostView</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">mHostView</span><span class="o">.</span><span class="na">invalidate</span><span class="o">(</span><span class="n">dirty</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">invalidate</span><span class="o">(</span><span class="kt">int</span> <span class="n">l</span><span class="o">,</span> <span class="kt">int</span> <span class="n">t</span><span class="o">,</span> <span class="kt">int</span> <span class="n">r</span><span class="o">,</span> <span class="kt">int</span> <span class="n">b</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">super</span><span class="o">.</span><span class="na">invalidate</span><span class="o">(</span><span class="n">l</span><span class="o">,</span> <span class="n">t</span><span class="o">,</span> <span class="n">r</span><span class="o">,</span> <span class="n">b</span><span class="o">);</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">mHostView</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">mHostView</span><span class="o">.</span><span class="na">invalidate</span><span class="o">(</span><span class="n">l</span><span class="o">,</span> <span class="n">t</span><span class="o">,</span> <span class="n">r</span><span class="o">,</span> <span class="n">b</span><span class="o">);</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">invalidate</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">super</span><span class="o">.</span><span class="na">invalidate</span><span class="o">();</span>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">mHostView</span> <span class="o">!=</span> <span class="kc">null</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">mHostView</span><span class="o">.</span><span class="na">invalidate</span><span class="o">();</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">[...]</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>Two <u>real</u> use cases</h1>
+
+<p>I underlined the word <em>real</em> because I didn&rsquo;t want to explain you how to use Overlay with irrelevant examples. That&rsquo;s why, I&rsquo;m going to present you two problems solved thanks to Overlays : a button with a banner and how to animate a view deletion.</p>
+
+<h2>A button with a banner (ViewOverlay)</h2>
+
+<p>Here we want to add a banner with some text on top-right corner of a button as you can see below.</p>
+
+<p><img src="/media/2013-08-14-viewoverlay-when-how-and-for-what-purpose/banner-button.png"></p>
+
+<p>The main difficulty is that we don&rsquo;t want the button&rsquo;s behaviour to be changed by the banner (i.e. click, touch etc.).</p>
+
+<h3>A basic xml layout</h3>
+
+<p>Here we have a basic layout with one button.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="o">&lt;</span><span class="n">RelativeLayout</span>
+</span><span class='line'><span class="nl">xmlns:</span><span class="n">android</span><span class="o">=</span><span class="s">&quot;http://schemas.android.com/apk/res/android&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">layout_width</span><span class="o">=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">layout_height</span><span class="o">=</span><span class="s">&quot;match_parent&quot;</span><span class="o">&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;</span><span class="n">Button</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">id</span><span class="o">=</span><span class="s">&quot;@+id/button&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">text</span><span class="o">=</span><span class="s">&quot;Click me even if I&#39;m a pirate&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">background</span><span class="o">=</span><span class="s">&quot;@drawable/badged&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">layout_width</span><span class="o">=</span><span class="s">&quot;250dp&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">layout_height</span><span class="o">=</span><span class="s">&quot;250dp&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">textColor</span><span class="o">=</span><span class="s">&quot;#FFF&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">fontFamily</span><span class="o">=</span><span class="s">&quot;sans-serif-condensed&quot;</span>
+</span><span class='line'><span class="nl">android:</span><span class="n">layout_centerHorizontal</span><span class="o">=</span><span class="s">&quot;true&quot;</span><span class="o">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">&lt;/</span><span class="n">RelativeLayout</span><span class="o">&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>A custom banner drawable</h3>
+
+<p>For more flexibility (change the banner color, text etc), you have to implement a custom drawable in order to draw a banner.</p>
+
+<p>I&rsquo;m not gonna explain how to draw a banner because this is not the main purpose of this post. If you have questions, don&rsquo;t hesitate to <a href="http://twitter.com/flavienlaurent">ask me</a>. So, here is the custom drawable.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">class</span> <span class="nc">BannerDrawable</span> <span class="kd">extends</span> <span class="n">Drawable</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kd">static</span> <span class="kd">final</span> <span class="kt">double</span> <span class="n">SQRT_2</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">sqrt</span><span class="o">(</span><span class="mi">2</span><span class="o">);</span>
+</span><span class='line'><span class="kd">private</span> <span class="kd">final</span> <span class="n">Rect</span> <span class="n">mTextBounds</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="n">Paint</span> <span class="n">mPaintFill</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="n">Paint</span> <span class="n">mPaintText</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="n">String</span> <span class="n">mMessage</span> <span class="o">=</span> <span class="s">&quot;I&#39;M A PIRATE BANNER&quot;</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="kt">int</span> <span class="n">mBannerWidth</span> <span class="o">=</span> <span class="mi">50</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="kt">int</span> <span class="n">mTextSize</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="nf">BannerDrawable</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">initPaintFill</span><span class="o">();</span>
+</span><span class='line'>  <span class="n">initPaintText</span><span class="o">();</span>
+</span><span class='line'>  <span class="n">mTextBounds</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Rect</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kt">void</span> <span class="nf">initPaintFill</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">mPaintFill</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Paint</span><span class="o">(</span><span class="n">ANTI_ALIAS_FLAG</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">mPaintFill</span><span class="o">.</span><span class="na">setStyle</span><span class="o">(</span><span class="n">Paint</span><span class="o">.</span><span class="na">Style</span><span class="o">.</span><span class="na">FILL</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">mPaintFill</span><span class="o">.</span><span class="na">setColor</span><span class="o">(</span><span class="n">getResources</span><span class="o">().</span><span class="na">getColor</span><span class="o">(</span><span class="n">R</span><span class="o">.</span><span class="na">color</span><span class="o">.</span><span class="na">banner</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kt">void</span> <span class="nf">initPaintText</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">mPaintText</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Paint</span><span class="o">(</span><span class="n">ANTI_ALIAS_FLAG</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">mPaintText</span><span class="o">.</span><span class="na">setStyle</span><span class="o">(</span><span class="n">Paint</span><span class="o">.</span><span class="na">Style</span><span class="o">.</span><span class="na">FILL</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">mPaintText</span><span class="o">.</span><span class="na">setColor</span><span class="o">(</span><span class="n">Color</span><span class="o">.</span><span class="na">WHITE</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">mPaintText</span><span class="o">.</span><span class="na">setTextSize</span><span class="o">(</span><span class="mi">20</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">mPaintText</span><span class="o">.</span><span class="na">setShadowLayer</span><span class="o">(</span><span class="mf">4.0f</span><span class="o">,</span> <span class="mf">2.0f</span><span class="o">,</span> <span class="mf">2.0f</span><span class="o">,</span> <span class="n">Color</span><span class="o">.</span><span class="na">BLACK</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">draw</span><span class="o">(</span><span class="n">Canvas</span> <span class="n">canvas</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">Rect</span> <span class="n">bounds</span> <span class="o">=</span> <span class="n">getBounds</span><span class="o">();</span>
+</span><span class='line'>            <span class="k">if</span> <span class="o">(</span><span class="n">bounds</span><span class="o">.</span><span class="na">isEmpty</span><span class="o">())</span> <span class="o">{</span>
+</span><span class='line'>                <span class="n">bounds</span> <span class="o">=</span> <span class="n">canvas</span><span class="o">.</span><span class="na">getClipBounds</span><span class="o">();</span>
+</span><span class='line'>            <span class="o">}</span>
+</span><span class='line'>            <span class="kt">float</span> <span class="n">width</span> <span class="o">=</span> <span class="n">bounds</span><span class="o">.</span><span class="na">width</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">adaptTextSize</span><span class="o">((</span><span class="kt">int</span><span class="o">)</span> <span class="o">(</span><span class="n">width</span> <span class="o">*</span> <span class="mf">0.9</span><span class="o">),</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(</span><span class="n">mBannerWidth</span> <span class="o">*</span> <span class="mf">0.9</span><span class="o">));</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="kt">float</span> <span class="n">bannerHyp</span> <span class="o">=</span> <span class="o">(</span><span class="kt">float</span><span class="o">)</span> <span class="o">(</span><span class="n">mBannerWidth</span> <span class="o">*</span> <span class="n">SQRT_2</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">canvas</span><span class="o">.</span><span class="na">translate</span><span class="o">(</span><span class="mi">0</span><span class="o">,</span> <span class="n">bounds</span><span class="o">.</span><span class="na">centerY</span><span class="o">()</span> <span class="o">-</span> <span class="n">mBannerWidth</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">canvas</span><span class="o">.</span><span class="na">rotate</span><span class="o">(</span><span class="mi">45</span><span class="o">,</span> <span class="n">bounds</span><span class="o">.</span><span class="na">centerX</span><span class="o">(),</span> <span class="n">bounds</span><span class="o">.</span><span class="na">centerY</span><span class="o">()</span> <span class="o">-</span> <span class="n">mBannerWidth</span><span class="o">);</span>
+</span><span class='line'>            <span class="n">canvas</span><span class="o">.</span><span class="na">drawRect</span><span class="o">(</span><span class="n">bounds</span><span class="o">.</span><span class="na">left</span> <span class="o">-</span> <span class="n">bannerHyp</span><span class="o">,</span> <span class="n">bounds</span><span class="o">.</span><span class="na">top</span><span class="o">,</span> <span class="n">bounds</span><span class="o">.</span><span class="na">right</span> <span class="o">+</span> <span class="n">bannerHyp</span><span class="o">,</span> <span class="n">bounds</span><span class="o">.</span><span class="na">top</span> <span class="o">+</span> <span class="n">mBannerWidth</span><span class="o">,</span> <span class="n">mPaintFill</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>            <span class="n">canvas</span><span class="o">.</span><span class="na">drawText</span><span class="o">(</span><span class="n">mMessage</span><span class="o">,</span> <span class="n">bounds</span><span class="o">.</span><span class="na">centerX</span><span class="o">()</span> <span class="o">-</span> <span class="n">mTextBounds</span><span class="o">.</span><span class="na">centerX</span><span class="o">(),</span> <span class="n">mBannerWidth</span> <span class="o">/</span> <span class="mi">2</span> <span class="o">+</span> <span class="n">mTextBounds</span><span class="o">.</span><span class="na">height</span><span class="o">()</span> <span class="o">/</span> <span class="mi">2</span><span class="o">,</span> <span class="n">mPaintText</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kt">void</span> <span class="nf">adaptTextSize</span><span class="o">(</span><span class="kt">float</span> <span class="n">width</span><span class="o">,</span> <span class="kt">int</span> <span class="n">height</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">mTextSize</span> <span class="o">&gt;</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">mPaintText</span><span class="o">.</span><span class="na">setTextSize</span><span class="o">(</span><span class="n">mTextSize</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="n">textSize</span> <span class="o">=</span> <span class="mi">10</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="n">textHeight</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">int</span> <span class="n">textWidth</span><span class="o">;</span>
+</span><span class='line'>  <span class="kt">boolean</span> <span class="n">stop</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>  <span class="k">while</span> <span class="o">(!</span><span class="n">stop</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">mTextSize</span> <span class="o">=</span> <span class="n">textSize</span><span class="o">++;</span>
+</span><span class='line'>      <span class="n">mPaintText</span><span class="o">.</span><span class="na">setTextSize</span><span class="o">(</span><span class="n">mTextSize</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">mPaintText</span><span class="o">.</span><span class="na">getTextBounds</span><span class="o">(</span><span class="n">mMessage</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">mMessage</span><span class="o">.</span><span class="na">length</span><span class="o">(),</span> <span class="n">mTextBounds</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">textHeight</span> <span class="o">=</span> <span class="n">mTextBounds</span><span class="o">.</span><span class="na">height</span><span class="o">();</span>
+</span><span class='line'>      <span class="n">textWidth</span> <span class="o">=</span> <span class="n">mTextBounds</span><span class="o">.</span><span class="na">width</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">stop</span> <span class="o">=</span> <span class="n">textHeight</span> <span class="o">&gt;=</span> <span class="n">height</span> <span class="o">||</span> <span class="n">textWidth</span> <span class="o">&gt;=</span> <span class="n">width</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">setAlpha</span><span class="o">(</span><span class="kt">int</span> <span class="n">alpha</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">setColorFilter</span><span class="o">(</span><span class="n">ColorFilter</span> <span class="n">cf</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">int</span> <span class="nf">getOpacity</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="n">PixelFormat</span><span class="o">.</span><span class="na">OPAQUE</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h3>Finally, use a ViewOverlay</h3>
+
+<p>This last step is quite simple. It consists in sizing and positioning a BannerDrawable and to add it to the button&rsquo;s ViewOverlay when the button has been fully laid out.</p>
+
+<p><em>Note that the drawable bounds is the top right square of the button.</em></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">final</span> <span class="n">View</span> <span class="n">button</span> <span class="o">=</span> <span class="n">findViewById</span><span class="o">(</span><span class="n">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">button</span><span class="o">);</span>
+</span><span class='line'><span class="kd">final</span> <span class="n">ViewOverlay</span> <span class="n">overlay</span> <span class="o">=</span> <span class="n">button</span><span class="o">.</span><span class="na">getOverlay</span><span class="o">();</span>
+</span><span class='line'><span class="kd">final</span> <span class="n">BannerDrawable</span> <span class="n">bannerDrawable</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">BannerDrawable</span><span class="o">();</span>
+</span><span class='line'><span class="n">button</span><span class="o">.</span><span class="na">post</span><span class="o">(</span><span class="k">new</span> <span class="nf">Runnable</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">run</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>      <span class="c1">//top right square</span>
+</span><span class='line'>      <span class="n">bannerDrawable</span><span class="o">.</span><span class="na">setBounds</span><span class="o">(</span><span class="n">button</span><span class="o">.</span><span class="na">getWidth</span><span class="o">()</span> <span class="o">/</span> <span class="mi">2</span><span class="o">,</span> <span class="mi">0</span><span class="o">,</span> <span class="n">button</span><span class="o">.</span><span class="na">getWidth</span><span class="o">(),</span> <span class="n">button</span><span class="o">.</span><span class="na">getHeight</span><span class="o">()</span> <span class="o">/</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>      <span class="n">overlay</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">bannerDrawable</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>This is piece of cake, isn&rsquo;t it ?</p>
+
+<h2>Animating a view deletion (ViewGroupOverlay)</h2>
+
+<p>This second use case is a bit more complicated. We&rsquo;re gonna animate the deletion of a view (i.e. Button) in a parent (i.e. LinearLayout) with a eyecatching approach.</p>
+
+<p>If you still have not understand the use case I want to explain to you, you can take a look on the animated gif below.</p>
+
+<p><img src="/media/2013-08-14-viewoverlay-when-how-and-for-what-purpose/animated-deletion.gif"></p>
+
+<h3>Step1: fill the parent</h3>
+
+<p>Assume that we have an xml layout with an empty LinearLayout (id=<code>buttons</code>) inside a ScrollView.
+We create 10 buttons inside the LinearLayout:</p>
+
+<figure class='code'><figcaption><span>onCreate()</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="k">for</span><span class="o">(</span><span class="kt">int</span> <span class="n">i</span><span class="o">=</span><span class="mi">0</span><span class="o">;</span> <span class="n">i</span><span class="o">&lt;</span><span class="mi">10</span><span class="o">;</span> <span class="n">i</span><span class="o">++)</span> <span class="o">{</span>
+</span><span class='line'><span class="kd">final</span> <span class="n">Button</span> <span class="n">button</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">Button</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+</span><span class='line'><span class="o">[...</span> <span class="n">customize</span> <span class="n">the</span> <span class="n">button</span> <span class="o">...]</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">buttons</span><span class="o">.</span><span class="na">addView</span><span class="o">(</span><span class="n">button</span><span class="o">,</span> <span class="n">params</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'><span class="n">button</span><span class="o">.</span><span class="na">setOnClickListener</span><span class="o">(</span><span class="k">new</span> <span class="n">View</span><span class="o">.</span><span class="na">OnClickListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onClick</span><span class="o">(</span><span class="n">View</span> <span class="n">v</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">Toast</span><span class="o">.</span><span class="na">makeText</span><span class="o">(</span><span class="n">AnimActivity</span><span class="o">.</span><span class="na">this</span><span class="o">,</span> <span class="s">&quot;You click on a button&quot;</span><span class="o">,</span> <span class="n">Toast</span><span class="o">.</span><span class="na">LENGTH_SHORT</span><span class="o">).</span><span class="na">show</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span><span class='line'><span class="n">button</span><span class="o">.</span><span class="na">setOnLongClickListener</span><span class="o">(</span><span class="k">new</span> <span class="n">View</span><span class="o">.</span><span class="na">OnLongClickListener</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">onLongClick</span><span class="o">(</span><span class="n">View</span> <span class="n">v</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">animatedDelete</span><span class="o">(</span><span class="n">button</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Each button show a toast onClick and is deleted onLongClick.</p>
+
+<h3>Step2: animate the deletion</h3>
+
+<p>On delete, we scale up the button and decrease the alpha property. To achieve that, we use multiple <a href="http://developer.android.com/reference/android/animation/ObjectAnimator.html">ObjectAnimators</a> played together thanks to an <a href="http://developer.android.com/reference/android/animation/AnimatorSet.html">AnimatorSet</a>.</p>
+
+<p>Before starting the animation, don&rsquo;t forget to add the button to the ViewGroupOverlay of the <strong>top parent</strong> (i.e. the activity main view) in order not to clip the button in the ViewGroupOverlay by its direct parent (i.e. LinearLayout).</p>
+
+<p>Finally, when the animation ends or is cancelled, remove the button from the ViewGroupOverlay.</p>
+
+<p>It gives us the following method</p>
+
+<figure class='code'><figcaption><span>animatedDelete(Button)</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">private</span> <span class="kt">void</span> <span class="nf">animatedDelete</span><span class="o">(</span><span class="kd">final</span> <span class="n">Button</span> <span class="n">button</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'><span class="kd">final</span> <span class="n">ViewGroupOverlay</span> <span class="n">viewGroupOverlay</span> <span class="o">=</span> <span class="o">((</span><span class="n">ViewGroup</span><span class="o">)</span> <span class="n">findViewById</span><span class="o">(</span><span class="n">android</span><span class="o">.</span><span class="na">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">content</span><span class="o">)).</span><span class="na">getOverlay</span><span class="o">();</span>
+</span><span class='line'><span class="n">viewGroupOverlay</span><span class="o">.</span><span class="na">add</span><span class="o">(</span><span class="n">button</span><span class="o">);</span>
+</span><span class='line'><span class="n">AnimatorSet</span> <span class="n">set</span> <span class="o">=</span> <span class="k">new</span> <span class="nf">AnimatorSet</span><span class="o">();</span>
+</span><span class='line'><span class="n">set</span><span class="o">.</span><span class="na">playTogether</span><span class="o">(</span>
+</span><span class='line'>      <span class="n">ObjectAnimator</span><span class="o">.</span><span class="na">ofFloat</span><span class="o">(</span><span class="n">button</span><span class="o">,</span> <span class="s">&quot;scaleX&quot;</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">3</span><span class="n">f</span><span class="o">),</span>
+</span><span class='line'>      <span class="n">ObjectAnimator</span><span class="o">.</span><span class="na">ofFloat</span><span class="o">(</span><span class="n">button</span><span class="o">,</span> <span class="s">&quot;scaleY&quot;</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mi">3</span><span class="n">f</span><span class="o">),</span>
+</span><span class='line'>      <span class="n">ObjectAnimator</span><span class="o">.</span><span class="na">ofFloat</span><span class="o">(</span><span class="n">button</span><span class="o">,</span> <span class="s">&quot;alpha&quot;</span><span class="o">,</span> <span class="mi">1</span><span class="o">,</span> <span class="mf">0.0f</span><span class="o">)</span>
+</span><span class='line'><span class="o">);</span>
+</span><span class='line'><span class="n">set</span><span class="o">.</span><span class="na">start</span><span class="o">();</span>
+</span><span class='line'><span class="n">set</span><span class="o">.</span><span class="na">addListener</span><span class="o">(</span><span class="k">new</span> <span class="nf">AnimatorListenerAdapter</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onAnimationEnd</span><span class="o">(</span><span class="n">Animator</span> <span class="n">animation</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">viewGroupOverlay</span><span class="o">.</span><span class="na">remove</span><span class="o">(</span><span class="n">button</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">});</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>And this is it!</p>
+
+<h2>Conclusion</h2>
+
+<p>I&rsquo;ve shown you two real examples where using Overlay is clearly an appropriated method. The only serious disadvantage is that Overlays are only available since API level 18.</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Flavien Laurent</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2013-08-14T12:19:00+02:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>14</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>12:19 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/4-dot-3/'>4.3</a>, <a class='category' href='/blog/categories/viewgroupoverlay/'>viewgroupoverlay</a>, <a class='category' href='/blog/categories/viewoverlay/'>viewoverlay</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://flavienlaurent.com/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/" data-via="flavienlaurent" data-counturl="http://flavienlaurent.com/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/08/05/make-your-background-moving-like-on-play-music-app/" title="Previous Post: Make your background moving like on the Play Music app">&laquo; Make your background moving like on the Play Music app</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper/" title="Next Post: Each Navigation Drawer Hides a ViewDragHelper">Each Navigation Drawer Hides a ViewDragHelper &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/12/05/screenshot_automation/">Screenshots Through Automation</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/31/spans/">Spans, a Powerful Concept.</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/11/20/making-your-action-bar-not-boring/">Making Your ActionBar Not Boring</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper/">Each Navigation Drawer Hides a ViewDragHelper</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/">ViewOverlay: When, How and for What Purpose?</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/flavienlaurent">@flavienlaurent</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'flavienlaurent',
+            count: 2,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+<section class="googleplus">
+  <h1>
+    <a href="https://plus.google.com/103561222519914490723?rel=author">
+      <img src="http://www.google.com/images/icons/ui/gprofile_button-32.png" width="32" height="32">
+      Google+
+    </a>
+  </h1>
+</section>
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - Flavien Laurent -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'flavienlaurent';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://flavienlaurent.com/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/';
+        var disqus_url = 'http://flavienlaurent.com/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>

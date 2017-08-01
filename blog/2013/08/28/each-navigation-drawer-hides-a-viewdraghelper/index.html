@@ -1,0 +1,1115 @@
+
+<!DOCTYPE html>
+<!--[if IEMobile 7 ]><html class="no-js iem7"><![endif]-->
+<!--[if lt IE 9]><html class="no-js lte-ie8"><![endif]-->
+<!--[if (gt IE 8)|(gt IEMobile 7)|!(IEMobile)|!(IE)]><!--><html class="no-js" lang="en"><!--<![endif]-->
+<head>
+  <meta charset="utf-8">
+  <title>Each Navigation Drawer Hides a ViewDragHelper - Flavien Laurent</title>
+  <meta name="author" content="Flavien Laurent">
+
+  
+  <meta name="description" content="Recently, at the Google I/O 2013, two new layouts have been introduced: SlidingPaneLayout, a view that can be dragged from bottom to top and vice &hellip;">
+  
+
+  <!-- http://t.co/dKP3o1e -->
+  <meta name="HandheldFriendly" content="True">
+  <meta name="MobileOptimized" content="320">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+
+  
+  <link rel="canonical" href="http://flavienlaurent.com/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper">
+  <link href="/favicon.png" rel="icon">
+  <link href="/stylesheets/screen.css" media="screen, projection" rel="stylesheet" type="text/css">
+  <link href="/atom.xml" rel="alternate" title="Flavien Laurent" type="application/atom+xml">
+  <script src="/javascripts/modernizr-2.0.js"></script>
+  <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+  <script>!window.jQuery && document.write(unescape('%3Cscript src="./javascripts/libs/jquery.min.js"%3E%3C/script%3E'))</script>
+  <script src="/javascripts/octopress.js" type="text/javascript"></script>
+  <!--Fonts from Google"s Web font directory at http://google.com/webfonts -->
+<link href="http://fonts.googleapis.com/css?family=PT+Serif:regular,italic,bold,bolditalic" rel="stylesheet" type="text/css">
+<link href='http://fonts.googleapis.com/css?family=Open+Sans' rel='stylesheet' type='text/css'>
+<link href='http://fonts.googleapis.com/css?family=Fjalla+One' rel='stylesheet' type='text/css'>
+
+  
+  <script type="text/javascript">
+    var _gaq = _gaq || [];
+    _gaq.push(['_setAccount', 'UA-43113155-1']);
+    _gaq.push(['_trackPageview']);
+
+    (function() {
+      var ga = document.createElement('script'); ga.type = 'text/javascript'; ga.async = true;
+      ga.src = ('https:' == document.location.protocol ? 'https://ssl' : 'http://www') + '.google-analytics.com/ga.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(ga, s);
+    })();
+  </script>
+
+
+</head>
+
+<body   >
+  <header role="banner"><hgroup>
+  <h1><a href="/">Flavien Laurent</a></h1>
+  
+    <h2>The Android Framework, step by step</h2>
+  
+</hgroup>
+
+</header>
+  <nav role="navigation"><ul class="subscription" data-subscription="rss">
+  <li><a href="/atom.xml" rel="subscribe-rss" title="subscribe via RSS">RSS</a></li>
+  
+</ul>
+  
+<form action="http://google.com/search" method="get">
+  <fieldset role="search">
+    <input type="hidden" name="q" value="site:flavienlaurent.com" />
+    <input class="search" type="text" name="q" results="0" placeholder="Search"/>
+  </fieldset>
+</form>
+  
+<ul class="main-navigation">
+  <li><a href="/">Blog</a></li>
+  <li><a href="/blog/archives">Archives</a></li>
+	
+	<li><a href="http://github.com/flavienlaurent" title="Github Profile" target="_blank"></i>Github</a></li>
+	
+	
+	
+	<li><a href="http://twitter.com/flavienlaurent" title="Twitter Profile" target="_blank">Twitter</a></li>
+	
+	
+	<li><a href="http://plus.google.com/103561222519914490723" title="Google+ Profile" target="_blank">G+</a></li>
+	
+	
+	
+	<li><a href="/atom.xml" title="RSS" target="_blank">RSS</a></li>
+	
+	
+</ul>
+</nav>
+  <div id="main">
+    <div id="content">
+      <div>
+<article class="hentry" role="article">
+  
+  <header>
+    
+      <h1 class="entry-title">Each Navigation Drawer Hides a ViewDragHelper</h1>
+    
+    
+      <p class="meta">
+        
+
+
+
+
+<time class='entry-date' datetime='2013-08-28T18:56:00+02:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>6:56 pm</span></time>
+        
+      </p>
+    
+  </header>
+
+
+<div class="entry-content"><p>Recently, at the Google I/O 2013, two new layouts have been introduced: <code>SlidingPaneLayout</code>, a view that can be dragged from bottom to top and vice versa and the <code>DrawerLayout</code>, now used in almost all Google applications. Both of these use a new concept to more easily manage dragging: the <strong>ViewDragHelper</strong>.</p>
+
+<!-- more -->
+
+
+<p>In this article, I’m going to talk about the ViewDragHelper (aka VDH) because making a custom layout with dragging child view may be pain sometimes. First, I will show you how to use it and how it works (the main lines). Secondly, I will expose you a use case where the VDH is really useful.</p>
+
+<p><a href="http://flavienlaurent.com/media/2013-08-28-each-navigation-drawer-hides-a-viewdraghelper/sample.apk">Download Sample Application</a></p>
+
+<h1>API design</h1>
+
+<h2>In a few words</h2>
+
+<p>There are some important points to remember about VDH:</p>
+
+<ul>
+<li>a <code>ViewDragHelper.Callback</code> is used as a communication channel between parent view and VDH</li>
+<li>there is a static factory method to create a VDH instance</li>
+<li>you can configure the drag direction as you want</li>
+<li>a drag can be detected from edge even if there is no view to capture (left, right, top, bottom)</li>
+</ul>
+
+
+<p>Remember to read the official documentation: <a href="http://developer.android.com/reference/android/support/v4/widget/ViewDragHelper.html">ViewDragHelper</a> and <a href="http://developer.android.com/reference/android/support/v4/widget/ViewDragHelper.Callback.html">ViewDragHelper.Callback</a></p>
+
+<h2>Reading the source code</h2>
+
+<p>The VDH and its callback are available in the support-v4 library. You can read the source code : <a href="https://android.googlesource.com/platform/frameworks/support/+/refs/heads/master/v4/java/android/support/v4/widget/ViewDragHelper.java">ViewDragHelper</a> and <a href="http://developer.android.com/reference/android/support/v4/widget/ViewDragHelper.Callback.html">ViewDragHelper.Callback</a>.</p>
+
+<p>It uses some common classes of the framework : a <a href="https://android.googlesource.com/platform/frameworks/base/+/refs/heads/master/core/java/android/view/VelocityTracker.java">VelocityTracker</a> for tracking fingling and other touch events and a <a href="https://android.googlesource.com/platform/frameworks/base/+/refs/heads/master/core/java/android/widget/Scroller.java">Scroller</a> to scroll views when it&rsquo;s needed.</p>
+
+<p>You must read the source code as much as possible because first, it’s very interesting and then if you know how it works, you will be able to use it in a better way.</p>
+
+<h1>Using the VDH</h1>
+
+<p>In this section, I’m going to show you a few examples of what is possible to configure on a VDH. Let’s begin with some initializations and then, I will explain a few possible configurations.</p>
+
+<h2>VDH&rsquo;s initialization</h2>
+
+<p>A custom <code>ViewGroup</code> extending a <code>LinearLayout</code> (<code>DragLayout</code>) with a simple child <code>View</code> (named <code>mDragView</code>).</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">DragLayout</span> <span class="kd">extends</span> <span class="n">LinearLayout</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kd">final</span> <span class="n">ViewDragHelper</span> <span class="n">mDragHelper</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="n">View</span> <span class="n">mDragView</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="nf">DragLayout</span><span class="o">(</span><span class="n">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">this</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="nf">DragLayout</span><span class="o">(</span><span class="n">Context</span> <span class="n">context</span><span class="o">,</span> <span class="n">AttributeSet</span> <span class="n">attrs</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">this</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">attrs</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="nf">DragLayout</span><span class="o">(</span><span class="n">Context</span> <span class="n">context</span><span class="o">,</span> <span class="n">AttributeSet</span> <span class="n">attrs</span><span class="o">,</span> <span class="kt">int</span> <span class="n">defStyle</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">super</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">attrs</span><span class="o">,</span> <span class="n">defStyle</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Create a VDH with its callback. Note that you can specify the sensivity (official documentation says <em>Multiplier for how sensitive the helper should be about detecting the start of a drag. Larger values are more sensitive. 1.0f is normal.</em>)</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="nf">DragLayout</span><span class="o">(</span><span class="n">Context</span> <span class="n">context</span><span class="o">,</span> <span class="n">AttributeSet</span> <span class="n">attrs</span><span class="o">,</span> <span class="kt">int</span> <span class="n">defStyle</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">super</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">attrs</span><span class="o">,</span> <span class="n">defStyle</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">mDragHelper</span> <span class="o">=</span> <span class="n">ViewDragHelper</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="mf">1.0f</span><span class="o">,</span> <span class="k">new</span> <span class="nf">DragHelperCallback</span><span class="o">());</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>The most important, don&rsquo;t forget to call VDH methods in <code>onInterceptTouch</code> and <code>onTouch</code>.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">onInterceptTouchEvent</span><span class="o">(</span><span class="n">MotionEvent</span> <span class="n">ev</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">action</span> <span class="o">=</span> <span class="n">MotionEventCompat</span><span class="o">.</span><span class="na">getActionMasked</span><span class="o">(</span><span class="n">ev</span><span class="o">);</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">action</span> <span class="o">==</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_CANCEL</span> <span class="o">||</span> <span class="n">action</span> <span class="o">==</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_UP</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">mDragHelper</span><span class="o">.</span><span class="na">cancel</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>  <span class="k">return</span> <span class="n">mDragHelper</span><span class="o">.</span><span class="na">shouldInterceptTouchEvent</span><span class="o">(</span><span class="n">ev</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">onTouchEvent</span><span class="o">(</span><span class="n">MotionEvent</span> <span class="n">ev</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">mDragHelper</span><span class="o">.</span><span class="na">processTouchEvent</span><span class="o">(</span><span class="n">ev</span><span class="o">);</span>
+</span><span class='line'>  <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Now, you can change the VDH behavior just by configuring the callback.</p>
+
+<h2>Horizontal only</h2>
+
+<p>Implements <code>clampViewPositionHorizontal</code> to allow horizontal drag and to bound the drag motion. Note that documentation says <em>The default implementation does not allow horizontal motion</em>.</p>
+
+<p><em>You have to take margins and parent padding into consideration.</em></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">int</span> <span class="nf">clampViewPositionHorizontal</span><span class="o">(</span><span class="n">View</span> <span class="n">child</span><span class="o">,</span> <span class="kt">int</span> <span class="n">left</span><span class="o">,</span> <span class="kt">int</span> <span class="n">dx</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">Log</span><span class="o">.</span><span class="na">d</span><span class="o">(</span><span class="s">&quot;DragLayout&quot;</span><span class="o">,</span> <span class="s">&quot;clampViewPositionHorizontal &quot;</span> <span class="o">+</span> <span class="n">left</span> <span class="o">+</span> <span class="s">&quot;,&quot;</span> <span class="o">+</span> <span class="n">dx</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">leftBound</span> <span class="o">=</span> <span class="n">getPaddingLeft</span><span class="o">();</span>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">rightBound</span> <span class="o">=</span> <span class="n">getWidth</span><span class="o">()</span> <span class="o">-</span> <span class="n">mDragView</span><span class="o">.</span><span class="na">getWidth</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">newLeft</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">min</span><span class="o">(</span><span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">left</span><span class="o">,</span> <span class="n">leftBound</span><span class="o">),</span> <span class="n">rightBound</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">newLeft</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="/media/2013-08-28-each-navigation-drawer-hides-a-viewdraghelper/hdrag.gif"></p>
+
+<h2>Vertical only</h2>
+
+<p>Implements <code>clampViewPositionVertical</code> to allow horizontal drag and to bound the drag motion. Note that documentation says <em>The default implementation does not allow vertical motion</em>.</p>
+
+<p><em>You have to take margins and parent padding into consideration. Not like in the code below</em></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">int</span> <span class="nf">clampViewPositionVertical</span><span class="o">(</span><span class="n">View</span> <span class="n">child</span><span class="o">,</span> <span class="kt">int</span> <span class="n">top</span><span class="o">,</span> <span class="kt">int</span> <span class="n">dy</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">topBound</span> <span class="o">=</span> <span class="n">getPaddingTop</span><span class="o">();</span>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">bottomBound</span> <span class="o">=</span> <span class="n">getHeight</span><span class="o">()</span> <span class="o">-</span> <span class="n">mDragView</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">newTop</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">min</span><span class="o">(</span><span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">top</span><span class="o">,</span> <span class="n">topBound</span><span class="o">),</span> <span class="n">bottomBound</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">newTop</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="/media/2013-08-28-each-navigation-drawer-hides-a-viewdraghelper/vdrag.gif"></p>
+
+<h2>Capture or not capture a view</h2>
+
+<p>Implements <code>tryCaptureView</code> to allow a child view to be captured. Here, there are two child views (<code>mDragView1</code> and <code>mDragView2</code>) but only one (<code>mDragView1</code>) is draggable.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">tryCaptureView</span><span class="o">(</span><span class="n">View</span> <span class="n">child</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pointerId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">return</span> <span class="n">child</span> <span class="o">==</span> <span class="n">mDragView1</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="/media/2013-08-28-each-navigation-drawer-hides-a-viewdraghelper/capture.gif"></p>
+
+<h2>DragRange</h2>
+
+<p>Implements <code>getViewHorizontalDragRange</code> or <code>getViewVerticalDragRange</code> to returns the range of horizontal|vertical drag in pixels. This range is used by the VDH when you call <code>smoothSlideViewTo</code> or <code>settleCapturedViewAt</code> to calculate the scroll duration. Also, it’s used to check the horizontal|vertical touch slop.</p>
+
+<h2>Edge dragging</h2>
+
+<p>This feature is used in the <code>DrawerLayout</code> with <code>EDGE_LEFT</code> and <code>EDGE_RIGHT</code>.</p>
+
+<p>Configure the VDH to enable edge tracking.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="n">mDragHelper</span><span class="o">.</span><span class="na">setEdgeTrackingEnabled</span><span class="o">(</span><span class="n">ViewDragHelper</span><span class="o">.</span><span class="na">EDGE_LEFT</span><span class="o">);</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Implements <code>onEdgeTouched</code> called when the configured edge is touched. <em>Note that at this time, no child view is currently captured.</em></p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">onEdgeTouched</span><span class="o">(</span><span class="kt">int</span> <span class="n">edgeFlags</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pointerId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">super</span><span class="o">.</span><span class="na">onEdgeTouched</span><span class="o">(</span><span class="n">edgeFlags</span><span class="o">,</span> <span class="n">pointerId</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">Toast</span><span class="o">.</span><span class="na">makeText</span><span class="o">(</span><span class="n">getContext</span><span class="o">(),</span> <span class="s">&quot;edgeTouched&quot;</span><span class="o">,</span> <span class="n">Toast</span><span class="o">.</span><span class="na">LENGTH_SHORT</span><span class="o">).</span><span class="na">show</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p>Implements <code>onEdgeDragStarted</code> called when a real drag from the configured edge has started. <em>Note that at this time, no child view is currently captured.</em> In this method, you have to capture a child view manually.</p>
+
+<figure class='code'><figcaption><span></span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">onEdgeDragStarted</span><span class="o">(</span><span class="kt">int</span> <span class="n">edgeFlags</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pointerId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">mDragHelper</span><span class="o">.</span><span class="na">captureChildView</span><span class="o">(</span><span class="n">mDragView2</span><span class="o">,</span> <span class="n">pointerId</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<p><img src="/media/2013-08-28-each-navigation-drawer-hides-a-viewdraghelper/edge.gif"></p>
+
+<h2>A real example, the Youtube while playing layout</h2>
+
+<p>Recently, I’ve received an update of the Youtube app on my phone. Before this update, the most annoying thing was to not be able to watch a video and search the next video at the same time. They fixed this by implementing a nice layout in which you can minimize the video view from top to bottom.</p>
+
+<p>I’m going to show how to do it and how it’s simple thanks to VDH.</p>
+
+<p>Here is the expected result</p>
+
+<p><img src="/media/2013-08-28-each-navigation-drawer-hides-a-viewdraghelper/youtube.gif"></p>
+
+<p>Key points:</p>
+
+<ul>
+<li><code>tryCaptureView</code> returns true only for the header view</li>
+<li>drag range is calculated <code>onLayout</code></li>
+<li>use VDH’s methods in <code>onInterceptTouchEvent</code> and <code>onTouchEvent</code></li>
+<li>call <code>continueSettling</code> in <code>computeScroll</code> (because VDH uses a scroller)</li>
+<li>use <code>smoothSlideViewTo</code> to finish the drag motion</li>
+</ul>
+
+
+<p>Be careful, this layout is not well made: it’s a draft. There is still work to do; on the scale part, touch event when the header is scaled, <code>onLayout</code> and <code>onMeasure</code> are badly written too. Also, I don’t know if calling <code>requestLayout</code> in <code>onViewPositionChanged</code> is good solution… Anyway, if you have remarks or ideas to improve this layout, please tell me!).</p>
+
+<figure class='code'><figcaption><span>activity_main.xml</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+</pre></td><td class='code'><pre><code class='xml'><span class='line'><span class="nt">&lt;FrameLayout</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="na">xmlns:android=</span><span class="s">&quot;http://schemas.android.com/apk/res/android&quot;</span>
+</span><span class='line'>        <span class="na">android:layout_width=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'>        <span class="na">android:layout_height=</span><span class="s">&quot;match_parent&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;ListView</span>
+</span><span class='line'>            <span class="na">android:id=</span><span class="s">&quot;@+id/listView&quot;</span>
+</span><span class='line'>            <span class="na">android:layout_width=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'>            <span class="na">android:layout_height=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'>            <span class="na">android:tag=</span><span class="s">&quot;list&quot;</span>
+</span><span class='line'>            <span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;com.example.vdh.YoutubeLayout</span>
+</span><span class='line'>            <span class="na">android:layout_width=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'>            <span class="na">android:layout_height=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'>            <span class="na">android:id=</span><span class="s">&quot;@+id/youtubeLayout&quot;</span>
+</span><span class='line'>            <span class="na">android:orientation=</span><span class="s">&quot;vertical&quot;</span>
+</span><span class='line'>            <span class="na">android:visibility=</span><span class="s">&quot;visible&quot;</span><span class="nt">&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nt">&lt;TextView</span>
+</span><span class='line'>                <span class="na">android:id=</span><span class="s">&quot;@+id/viewHeader&quot;</span>
+</span><span class='line'>                <span class="na">android:layout_width=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'>                <span class="na">android:layout_height=</span><span class="s">&quot;128dp&quot;</span>
+</span><span class='line'>                <span class="na">android:fontFamily=</span><span class="s">&quot;sans-serif-thin&quot;</span>
+</span><span class='line'>                <span class="na">android:textSize=</span><span class="s">&quot;25sp&quot;</span>
+</span><span class='line'>                <span class="na">android:tag=</span><span class="s">&quot;text&quot;</span>
+</span><span class='line'>                <span class="na">android:gravity=</span><span class="s">&quot;center&quot;</span>
+</span><span class='line'>                <span class="na">android:textColor=</span><span class="s">&quot;@android:color/white&quot;</span>
+</span><span class='line'>                <span class="na">android:background=</span><span class="s">&quot;#AD78CC&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="nt">&lt;TextView</span>
+</span><span class='line'>                <span class="na">android:id=</span><span class="s">&quot;@+id/viewDesc&quot;</span>
+</span><span class='line'>                <span class="na">android:tag=</span><span class="s">&quot;desc&quot;</span>
+</span><span class='line'>                <span class="na">android:textSize=</span><span class="s">&quot;35sp&quot;</span>
+</span><span class='line'>                <span class="na">android:gravity=</span><span class="s">&quot;center&quot;</span>
+</span><span class='line'>                <span class="na">android:text=</span><span class="s">&quot;Loreum Loreum&quot;</span>
+</span><span class='line'>                <span class="na">android:textColor=</span><span class="s">&quot;@android:color/white&quot;</span>
+</span><span class='line'>                <span class="na">android:layout_width=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'>                <span class="na">android:layout_height=</span><span class="s">&quot;match_parent&quot;</span>
+</span><span class='line'>                <span class="na">android:background=</span><span class="s">&quot;#FF00FF&quot;</span><span class="nt">/&gt;</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nt">&lt;/com.example.vdh.YoutubeLayout&gt;</span>
+</span><span class='line'><span class="nt">&lt;/FrameLayout&gt;</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+
+
+<figure class='code'><figcaption><span>YoutubeLayout.java</span></figcaption><div class="highlight"><table><tr><td class="gutter"><pre class="line-numbers"><span class='line-number'>1</span>
+<span class='line-number'>2</span>
+<span class='line-number'>3</span>
+<span class='line-number'>4</span>
+<span class='line-number'>5</span>
+<span class='line-number'>6</span>
+<span class='line-number'>7</span>
+<span class='line-number'>8</span>
+<span class='line-number'>9</span>
+<span class='line-number'>10</span>
+<span class='line-number'>11</span>
+<span class='line-number'>12</span>
+<span class='line-number'>13</span>
+<span class='line-number'>14</span>
+<span class='line-number'>15</span>
+<span class='line-number'>16</span>
+<span class='line-number'>17</span>
+<span class='line-number'>18</span>
+<span class='line-number'>19</span>
+<span class='line-number'>20</span>
+<span class='line-number'>21</span>
+<span class='line-number'>22</span>
+<span class='line-number'>23</span>
+<span class='line-number'>24</span>
+<span class='line-number'>25</span>
+<span class='line-number'>26</span>
+<span class='line-number'>27</span>
+<span class='line-number'>28</span>
+<span class='line-number'>29</span>
+<span class='line-number'>30</span>
+<span class='line-number'>31</span>
+<span class='line-number'>32</span>
+<span class='line-number'>33</span>
+<span class='line-number'>34</span>
+<span class='line-number'>35</span>
+<span class='line-number'>36</span>
+<span class='line-number'>37</span>
+<span class='line-number'>38</span>
+<span class='line-number'>39</span>
+<span class='line-number'>40</span>
+<span class='line-number'>41</span>
+<span class='line-number'>42</span>
+<span class='line-number'>43</span>
+<span class='line-number'>44</span>
+<span class='line-number'>45</span>
+<span class='line-number'>46</span>
+<span class='line-number'>47</span>
+<span class='line-number'>48</span>
+<span class='line-number'>49</span>
+<span class='line-number'>50</span>
+<span class='line-number'>51</span>
+<span class='line-number'>52</span>
+<span class='line-number'>53</span>
+<span class='line-number'>54</span>
+<span class='line-number'>55</span>
+<span class='line-number'>56</span>
+<span class='line-number'>57</span>
+<span class='line-number'>58</span>
+<span class='line-number'>59</span>
+<span class='line-number'>60</span>
+<span class='line-number'>61</span>
+<span class='line-number'>62</span>
+<span class='line-number'>63</span>
+<span class='line-number'>64</span>
+<span class='line-number'>65</span>
+<span class='line-number'>66</span>
+<span class='line-number'>67</span>
+<span class='line-number'>68</span>
+<span class='line-number'>69</span>
+<span class='line-number'>70</span>
+<span class='line-number'>71</span>
+<span class='line-number'>72</span>
+<span class='line-number'>73</span>
+<span class='line-number'>74</span>
+<span class='line-number'>75</span>
+<span class='line-number'>76</span>
+<span class='line-number'>77</span>
+<span class='line-number'>78</span>
+<span class='line-number'>79</span>
+<span class='line-number'>80</span>
+<span class='line-number'>81</span>
+<span class='line-number'>82</span>
+<span class='line-number'>83</span>
+<span class='line-number'>84</span>
+<span class='line-number'>85</span>
+<span class='line-number'>86</span>
+<span class='line-number'>87</span>
+<span class='line-number'>88</span>
+<span class='line-number'>89</span>
+<span class='line-number'>90</span>
+<span class='line-number'>91</span>
+<span class='line-number'>92</span>
+<span class='line-number'>93</span>
+<span class='line-number'>94</span>
+<span class='line-number'>95</span>
+<span class='line-number'>96</span>
+<span class='line-number'>97</span>
+<span class='line-number'>98</span>
+<span class='line-number'>99</span>
+<span class='line-number'>100</span>
+<span class='line-number'>101</span>
+<span class='line-number'>102</span>
+<span class='line-number'>103</span>
+<span class='line-number'>104</span>
+<span class='line-number'>105</span>
+<span class='line-number'>106</span>
+<span class='line-number'>107</span>
+<span class='line-number'>108</span>
+<span class='line-number'>109</span>
+<span class='line-number'>110</span>
+<span class='line-number'>111</span>
+<span class='line-number'>112</span>
+<span class='line-number'>113</span>
+<span class='line-number'>114</span>
+<span class='line-number'>115</span>
+<span class='line-number'>116</span>
+<span class='line-number'>117</span>
+<span class='line-number'>118</span>
+<span class='line-number'>119</span>
+<span class='line-number'>120</span>
+<span class='line-number'>121</span>
+<span class='line-number'>122</span>
+<span class='line-number'>123</span>
+<span class='line-number'>124</span>
+<span class='line-number'>125</span>
+<span class='line-number'>126</span>
+<span class='line-number'>127</span>
+<span class='line-number'>128</span>
+<span class='line-number'>129</span>
+<span class='line-number'>130</span>
+<span class='line-number'>131</span>
+<span class='line-number'>132</span>
+<span class='line-number'>133</span>
+<span class='line-number'>134</span>
+<span class='line-number'>135</span>
+<span class='line-number'>136</span>
+<span class='line-number'>137</span>
+<span class='line-number'>138</span>
+<span class='line-number'>139</span>
+<span class='line-number'>140</span>
+<span class='line-number'>141</span>
+<span class='line-number'>142</span>
+<span class='line-number'>143</span>
+<span class='line-number'>144</span>
+<span class='line-number'>145</span>
+<span class='line-number'>146</span>
+<span class='line-number'>147</span>
+<span class='line-number'>148</span>
+<span class='line-number'>149</span>
+<span class='line-number'>150</span>
+<span class='line-number'>151</span>
+<span class='line-number'>152</span>
+<span class='line-number'>153</span>
+<span class='line-number'>154</span>
+<span class='line-number'>155</span>
+<span class='line-number'>156</span>
+<span class='line-number'>157</span>
+<span class='line-number'>158</span>
+<span class='line-number'>159</span>
+<span class='line-number'>160</span>
+<span class='line-number'>161</span>
+<span class='line-number'>162</span>
+<span class='line-number'>163</span>
+<span class='line-number'>164</span>
+<span class='line-number'>165</span>
+<span class='line-number'>166</span>
+<span class='line-number'>167</span>
+<span class='line-number'>168</span>
+<span class='line-number'>169</span>
+<span class='line-number'>170</span>
+<span class='line-number'>171</span>
+<span class='line-number'>172</span>
+<span class='line-number'>173</span>
+<span class='line-number'>174</span>
+<span class='line-number'>175</span>
+<span class='line-number'>176</span>
+<span class='line-number'>177</span>
+<span class='line-number'>178</span>
+<span class='line-number'>179</span>
+<span class='line-number'>180</span>
+<span class='line-number'>181</span>
+<span class='line-number'>182</span>
+<span class='line-number'>183</span>
+<span class='line-number'>184</span>
+<span class='line-number'>185</span>
+<span class='line-number'>186</span>
+<span class='line-number'>187</span>
+<span class='line-number'>188</span>
+<span class='line-number'>189</span>
+<span class='line-number'>190</span>
+<span class='line-number'>191</span>
+<span class='line-number'>192</span>
+<span class='line-number'>193</span>
+<span class='line-number'>194</span>
+<span class='line-number'>195</span>
+<span class='line-number'>196</span>
+<span class='line-number'>197</span>
+<span class='line-number'>198</span>
+<span class='line-number'>199</span>
+<span class='line-number'>200</span>
+<span class='line-number'>201</span>
+<span class='line-number'>202</span>
+<span class='line-number'>203</span>
+<span class='line-number'>204</span>
+<span class='line-number'>205</span>
+<span class='line-number'>206</span>
+<span class='line-number'>207</span>
+<span class='line-number'>208</span>
+<span class='line-number'>209</span>
+<span class='line-number'>210</span>
+<span class='line-number'>211</span>
+<span class='line-number'>212</span>
+<span class='line-number'>213</span>
+<span class='line-number'>214</span>
+<span class='line-number'>215</span>
+<span class='line-number'>216</span>
+<span class='line-number'>217</span>
+<span class='line-number'>218</span>
+</pre></td><td class='code'><pre><code class='java'><span class='line'><span class="kd">public</span> <span class="kd">class</span> <span class="nc">YoutubeLayout</span> <span class="kd">extends</span> <span class="n">ViewGroup</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kd">final</span> <span class="n">ViewDragHelper</span> <span class="n">mDragHelper</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="n">View</span> <span class="n">mHeaderView</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="n">View</span> <span class="n">mDescView</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kt">float</span> <span class="n">mInitialMotionX</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="kt">float</span> <span class="n">mInitialMotionY</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kt">int</span> <span class="n">mDragRange</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="kt">int</span> <span class="n">mTop</span><span class="o">;</span>
+</span><span class='line'><span class="kd">private</span> <span class="kt">float</span> <span class="n">mDragOffset</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="nf">YoutubeLayout</span><span class="o">(</span><span class="n">Context</span> <span class="n">context</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">this</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="kc">null</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="nf">YoutubeLayout</span><span class="o">(</span><span class="n">Context</span> <span class="n">context</span><span class="o">,</span> <span class="n">AttributeSet</span> <span class="n">attrs</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">this</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">attrs</span><span class="o">,</span> <span class="mi">0</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onFinishInflate</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">mHeaderView</span> <span class="o">=</span> <span class="n">findViewById</span><span class="o">(</span><span class="n">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">viewHeader</span><span class="o">);</span>
+</span><span class='line'>    <span class="n">mDescView</span> <span class="o">=</span> <span class="n">findViewById</span><span class="o">(</span><span class="n">R</span><span class="o">.</span><span class="na">id</span><span class="o">.</span><span class="na">viewDesc</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="nf">YoutubeLayout</span><span class="o">(</span><span class="n">Context</span> <span class="n">context</span><span class="o">,</span> <span class="n">AttributeSet</span> <span class="n">attrs</span><span class="o">,</span> <span class="kt">int</span> <span class="n">defStyle</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">super</span><span class="o">(</span><span class="n">context</span><span class="o">,</span> <span class="n">attrs</span><span class="o">,</span> <span class="n">defStyle</span><span class="o">);</span>
+</span><span class='line'>  <span class="n">mDragHelper</span> <span class="o">=</span> <span class="n">ViewDragHelper</span><span class="o">.</span><span class="na">create</span><span class="o">(</span><span class="k">this</span><span class="o">,</span> <span class="mi">1</span><span class="n">f</span><span class="o">,</span> <span class="k">new</span> <span class="nf">DragHelperCallback</span><span class="o">());</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">maximize</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">smoothSlideTo</span><span class="o">(</span><span class="mi">0</span><span class="n">f</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kt">boolean</span> <span class="nf">smoothSlideTo</span><span class="o">(</span><span class="kt">float</span> <span class="n">slideOffset</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kd">final</span> <span class="kt">int</span> <span class="n">topBound</span> <span class="o">=</span> <span class="n">getPaddingTop</span><span class="o">();</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">y</span> <span class="o">=</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="o">(</span><span class="n">topBound</span> <span class="o">+</span> <span class="n">slideOffset</span> <span class="o">*</span> <span class="n">mDragRange</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="k">if</span> <span class="o">(</span><span class="n">mDragHelper</span><span class="o">.</span><span class="na">smoothSlideViewTo</span><span class="o">(</span><span class="n">mHeaderView</span><span class="o">,</span> <span class="n">mHeaderView</span><span class="o">.</span><span class="na">getLeft</span><span class="o">(),</span> <span class="n">y</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>        <span class="n">ViewCompat</span><span class="o">.</span><span class="na">postInvalidateOnAnimation</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+</span><span class='line'>        <span class="k">return</span> <span class="kc">true</span><span class="o">;</span>
+</span><span class='line'>    <span class="o">}</span>
+</span><span class='line'>    <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kd">class</span> <span class="nc">DragHelperCallback</span> <span class="kd">extends</span> <span class="n">ViewDragHelper</span><span class="o">.</span><span class="na">Callback</span> <span class="o">{</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">tryCaptureView</span><span class="o">(</span><span class="n">View</span> <span class="n">child</span><span class="o">,</span> <span class="kt">int</span> <span class="n">pointerId</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>        <span class="k">return</span> <span class="n">child</span> <span class="o">==</span> <span class="n">mHeaderView</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onViewPositionChanged</span><span class="o">(</span><span class="n">View</span> <span class="n">changedView</span><span class="o">,</span> <span class="kt">int</span> <span class="n">left</span><span class="o">,</span> <span class="kt">int</span> <span class="n">top</span><span class="o">,</span> <span class="kt">int</span> <span class="n">dx</span><span class="o">,</span> <span class="kt">int</span> <span class="n">dy</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">mTop</span> <span class="o">=</span> <span class="n">top</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="n">mDragOffset</span> <span class="o">=</span> <span class="o">(</span><span class="kt">float</span><span class="o">)</span> <span class="n">top</span> <span class="o">/</span> <span class="n">mDragRange</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">mHeaderView</span><span class="o">.</span><span class="na">setPivotX</span><span class="o">(</span><span class="n">mHeaderView</span><span class="o">.</span><span class="na">getWidth</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">mHeaderView</span><span class="o">.</span><span class="na">setPivotY</span><span class="o">(</span><span class="n">mHeaderView</span><span class="o">.</span><span class="na">getHeight</span><span class="o">());</span>
+</span><span class='line'>        <span class="n">mHeaderView</span><span class="o">.</span><span class="na">setScaleX</span><span class="o">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mDragOffset</span> <span class="o">/</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>        <span class="n">mHeaderView</span><span class="o">.</span><span class="na">setScaleY</span><span class="o">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mDragOffset</span> <span class="o">/</span> <span class="mi">2</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">mDescView</span><span class="o">.</span><span class="na">setAlpha</span><span class="o">(</span><span class="mi">1</span> <span class="o">-</span> <span class="n">mDragOffset</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>        <span class="n">requestLayout</span><span class="o">();</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">void</span> <span class="nf">onViewReleased</span><span class="o">(</span><span class="n">View</span> <span class="n">releasedChild</span><span class="o">,</span> <span class="kt">float</span> <span class="n">xvel</span><span class="o">,</span> <span class="kt">float</span> <span class="n">yvel</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kt">int</span> <span class="n">top</span> <span class="o">=</span> <span class="n">getPaddingTop</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">if</span> <span class="o">(</span><span class="n">yvel</span> <span class="o">&gt;</span> <span class="mi">0</span> <span class="o">||</span> <span class="o">(</span><span class="n">yvel</span> <span class="o">==</span> <span class="mi">0</span> <span class="o">&amp;&amp;</span> <span class="n">mDragOffset</span> <span class="o">&gt;</span> <span class="mf">0.5f</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">top</span> <span class="o">+=</span> <span class="n">mDragRange</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>      <span class="n">mDragHelper</span><span class="o">.</span><span class="na">settleCapturedViewAt</span><span class="o">(</span><span class="n">releasedChild</span><span class="o">.</span><span class="na">getLeft</span><span class="o">(),</span> <span class="n">top</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">getViewVerticalDragRange</span><span class="o">(</span><span class="n">View</span> <span class="n">child</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">mDragRange</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="nd">@Override</span>
+</span><span class='line'>  <span class="kd">public</span> <span class="kt">int</span> <span class="nf">clampViewPositionVertical</span><span class="o">(</span><span class="n">View</span> <span class="n">child</span><span class="o">,</span> <span class="kt">int</span> <span class="n">top</span><span class="o">,</span> <span class="kt">int</span> <span class="n">dy</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="kd">final</span> <span class="kt">int</span> <span class="n">topBound</span> <span class="o">=</span> <span class="n">getPaddingTop</span><span class="o">();</span>
+</span><span class='line'>      <span class="kd">final</span> <span class="kt">int</span> <span class="n">bottomBound</span> <span class="o">=</span> <span class="n">getHeight</span><span class="o">()</span> <span class="o">-</span> <span class="n">mHeaderView</span><span class="o">.</span><span class="na">getHeight</span><span class="o">()</span> <span class="o">-</span> <span class="n">mHeaderView</span><span class="o">.</span><span class="na">getPaddingBottom</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="kd">final</span> <span class="kt">int</span> <span class="n">newTop</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">min</span><span class="o">(</span><span class="n">Math</span><span class="o">.</span><span class="na">max</span><span class="o">(</span><span class="n">top</span><span class="o">,</span> <span class="n">topBound</span><span class="o">),</span> <span class="n">bottomBound</span><span class="o">);</span>
+</span><span class='line'>      <span class="k">return</span> <span class="n">newTop</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">void</span> <span class="nf">computeScroll</span><span class="o">()</span> <span class="o">{</span>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">mDragHelper</span><span class="o">.</span><span class="na">continueSettling</span><span class="o">(</span><span class="kc">true</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">ViewCompat</span><span class="o">.</span><span class="na">postInvalidateOnAnimation</span><span class="o">(</span><span class="k">this</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">onInterceptTouchEvent</span><span class="o">(</span><span class="n">MotionEvent</span> <span class="n">ev</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">action</span> <span class="o">=</span> <span class="n">MotionEventCompat</span><span class="o">.</span><span class="na">getActionMasked</span><span class="o">(</span><span class="n">ev</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">if</span> <span class="o">((</span> <span class="n">action</span> <span class="o">!=</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_DOWN</span><span class="o">))</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">mDragHelper</span><span class="o">.</span><span class="na">cancel</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kd">super</span><span class="o">.</span><span class="na">onInterceptTouchEvent</span><span class="o">(</span><span class="n">ev</span><span class="o">);</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">if</span> <span class="o">(</span><span class="n">action</span> <span class="o">==</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_CANCEL</span> <span class="o">||</span> <span class="n">action</span> <span class="o">==</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_UP</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="n">mDragHelper</span><span class="o">.</span><span class="na">cancel</span><span class="o">();</span>
+</span><span class='line'>      <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">float</span> <span class="n">x</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="na">getX</span><span class="o">();</span>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">float</span> <span class="n">y</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="na">getY</span><span class="o">();</span>
+</span><span class='line'>  <span class="kt">boolean</span> <span class="n">interceptTap</span> <span class="o">=</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">switch</span> <span class="o">(</span><span class="n">action</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_DOWN</span><span class="o">:</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">mInitialMotionX</span> <span class="o">=</span> <span class="n">x</span><span class="o">;</span>
+</span><span class='line'>          <span class="n">mInitialMotionY</span> <span class="o">=</span> <span class="n">y</span><span class="o">;</span>
+</span><span class='line'>            <span class="n">interceptTap</span> <span class="o">=</span> <span class="n">mDragHelper</span><span class="o">.</span><span class="na">isViewUnder</span><span class="o">(</span><span class="n">mHeaderView</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">x</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">y</span><span class="o">);</span>
+</span><span class='line'>          <span class="k">break</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">case</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_MOVE</span><span class="o">:</span> <span class="o">{</span>
+</span><span class='line'>          <span class="kd">final</span> <span class="kt">float</span> <span class="n">adx</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">abs</span><span class="o">(</span><span class="n">x</span> <span class="o">-</span> <span class="n">mInitialMotionX</span><span class="o">);</span>
+</span><span class='line'>          <span class="kd">final</span> <span class="kt">float</span> <span class="n">ady</span> <span class="o">=</span> <span class="n">Math</span><span class="o">.</span><span class="na">abs</span><span class="o">(</span><span class="n">y</span> <span class="o">-</span> <span class="n">mInitialMotionY</span><span class="o">);</span>
+</span><span class='line'>          <span class="kd">final</span> <span class="kt">int</span> <span class="n">slop</span> <span class="o">=</span> <span class="n">mDragHelper</span><span class="o">.</span><span class="na">getTouchSlop</span><span class="o">();</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">ady</span> <span class="o">&gt;</span> <span class="n">slop</span> <span class="o">&amp;&amp;</span> <span class="n">adx</span> <span class="o">&gt;</span> <span class="n">ady</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="n">mDragHelper</span><span class="o">.</span><span class="na">cancel</span><span class="o">();</span>
+</span><span class='line'>              <span class="k">return</span> <span class="kc">false</span><span class="o">;</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">mDragHelper</span><span class="o">.</span><span class="na">shouldInterceptTouchEvent</span><span class="o">(</span><span class="n">ev</span><span class="o">)</span> <span class="o">||</span> <span class="n">interceptTap</span><span class="o">;</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">public</span> <span class="kt">boolean</span> <span class="nf">onTouchEvent</span><span class="o">(</span><span class="n">MotionEvent</span> <span class="n">ev</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">mDragHelper</span><span class="o">.</span><span class="na">processTouchEvent</span><span class="o">(</span><span class="n">ev</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>  <span class="kd">final</span> <span class="kt">int</span> <span class="n">action</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="na">getAction</span><span class="o">();</span>
+</span><span class='line'>    <span class="kd">final</span> <span class="kt">float</span> <span class="n">x</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="na">getX</span><span class="o">();</span>
+</span><span class='line'>    <span class="kd">final</span> <span class="kt">float</span> <span class="n">y</span> <span class="o">=</span> <span class="n">ev</span><span class="o">.</span><span class="na">getY</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">boolean</span> <span class="n">isHeaderViewUnder</span> <span class="o">=</span> <span class="n">mDragHelper</span><span class="o">.</span><span class="na">isViewUnder</span><span class="o">(</span><span class="n">mHeaderView</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">x</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">y</span><span class="o">);</span>
+</span><span class='line'>    <span class="k">switch</span> <span class="o">(</span><span class="n">action</span> <span class="o">&amp;</span> <span class="n">MotionEventCompat</span><span class="o">.</span><span class="na">ACTION_MASK</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>      <span class="k">case</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_DOWN</span><span class="o">:</span> <span class="o">{</span>
+</span><span class='line'>          <span class="n">mInitialMotionX</span> <span class="o">=</span> <span class="n">x</span><span class="o">;</span>
+</span><span class='line'>          <span class="n">mInitialMotionY</span> <span class="o">=</span> <span class="n">y</span><span class="o">;</span>
+</span><span class='line'>          <span class="k">break</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>      <span class="k">case</span> <span class="n">MotionEvent</span><span class="o">.</span><span class="na">ACTION_UP</span><span class="o">:</span> <span class="o">{</span>
+</span><span class='line'>          <span class="kd">final</span> <span class="kt">float</span> <span class="n">dx</span> <span class="o">=</span> <span class="n">x</span> <span class="o">-</span> <span class="n">mInitialMotionX</span><span class="o">;</span>
+</span><span class='line'>          <span class="kd">final</span> <span class="kt">float</span> <span class="n">dy</span> <span class="o">=</span> <span class="n">y</span> <span class="o">-</span> <span class="n">mInitialMotionY</span><span class="o">;</span>
+</span><span class='line'>          <span class="kd">final</span> <span class="kt">int</span> <span class="n">slop</span> <span class="o">=</span> <span class="n">mDragHelper</span><span class="o">.</span><span class="na">getTouchSlop</span><span class="o">();</span>
+</span><span class='line'>          <span class="k">if</span> <span class="o">(</span><span class="n">dx</span> <span class="o">*</span> <span class="n">dx</span> <span class="o">+</span> <span class="n">dy</span> <span class="o">*</span> <span class="n">dy</span> <span class="o">&lt;</span> <span class="n">slop</span> <span class="o">*</span> <span class="n">slop</span> <span class="o">&amp;&amp;</span> <span class="n">isHeaderViewUnder</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>              <span class="k">if</span> <span class="o">(</span><span class="n">mDragOffset</span> <span class="o">==</span> <span class="mi">0</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">smoothSlideTo</span><span class="o">(</span><span class="mi">1</span><span class="n">f</span><span class="o">);</span>
+</span><span class='line'>              <span class="o">}</span> <span class="k">else</span> <span class="o">{</span>
+</span><span class='line'>                  <span class="n">smoothSlideTo</span><span class="o">(</span><span class="mi">0</span><span class="n">f</span><span class="o">);</span>
+</span><span class='line'>              <span class="o">}</span>
+</span><span class='line'>          <span class="o">}</span>
+</span><span class='line'>          <span class="k">break</span><span class="o">;</span>
+</span><span class='line'>      <span class="o">}</span>
+</span><span class='line'>  <span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'>  <span class="k">return</span> <span class="n">isHeaderViewUnder</span> <span class="o">&amp;&amp;</span> <span class="n">isViewHit</span><span class="o">(</span><span class="n">mHeaderView</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">x</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">y</span><span class="o">)</span> <span class="o">||</span> <span class="n">isViewHit</span><span class="o">(</span><span class="n">mDescView</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">x</span><span class="o">,</span> <span class="o">(</span><span class="kt">int</span><span class="o">)</span> <span class="n">y</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'>
+</span><span class='line'><span class="kd">private</span> <span class="kt">boolean</span> <span class="nf">isViewHit</span><span class="o">(</span><span class="n">View</span> <span class="n">view</span><span class="o">,</span> <span class="kt">int</span> <span class="n">x</span><span class="o">,</span> <span class="kt">int</span> <span class="n">y</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="kt">int</span><span class="o">[]</span> <span class="n">viewLocation</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">2</span><span class="o">];</span>
+</span><span class='line'>    <span class="n">view</span><span class="o">.</span><span class="na">getLocationOnScreen</span><span class="o">(</span><span class="n">viewLocation</span><span class="o">);</span>
+</span><span class='line'>    <span class="kt">int</span><span class="o">[]</span> <span class="n">parentLocation</span> <span class="o">=</span> <span class="k">new</span> <span class="kt">int</span><span class="o">[</span><span class="mi">2</span><span class="o">];</span>
+</span><span class='line'>    <span class="k">this</span><span class="o">.</span><span class="na">getLocationOnScreen</span><span class="o">(</span><span class="n">parentLocation</span><span class="o">);</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">screenX</span> <span class="o">=</span> <span class="n">parentLocation</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">+</span> <span class="n">x</span><span class="o">;</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">screenY</span> <span class="o">=</span> <span class="n">parentLocation</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">+</span> <span class="n">y</span><span class="o">;</span>
+</span><span class='line'>    <span class="k">return</span> <span class="n">screenX</span> <span class="o">&gt;=</span> <span class="n">viewLocation</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="n">screenX</span> <span class="o">&lt;</span> <span class="n">viewLocation</span><span class="o">[</span><span class="mi">0</span><span class="o">]</span> <span class="o">+</span> <span class="n">view</span><span class="o">.</span><span class="na">getWidth</span><span class="o">()</span> <span class="o">&amp;&amp;</span>
+</span><span class='line'>            <span class="n">screenY</span> <span class="o">&gt;=</span> <span class="n">viewLocation</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">&amp;&amp;</span> <span class="n">screenY</span> <span class="o">&lt;</span> <span class="n">viewLocation</span><span class="o">[</span><span class="mi">1</span><span class="o">]</span> <span class="o">+</span> <span class="n">view</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onMeasure</span><span class="o">(</span><span class="kt">int</span> <span class="n">widthMeasureSpec</span><span class="o">,</span> <span class="kt">int</span> <span class="n">heightMeasureSpec</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>    <span class="n">measureChildren</span><span class="o">(</span><span class="n">widthMeasureSpec</span><span class="o">,</span> <span class="n">heightMeasureSpec</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">maxWidth</span> <span class="o">=</span> <span class="n">MeasureSpec</span><span class="o">.</span><span class="na">getSize</span><span class="o">(</span><span class="n">widthMeasureSpec</span><span class="o">);</span>
+</span><span class='line'>    <span class="kt">int</span> <span class="n">maxHeight</span> <span class="o">=</span> <span class="n">MeasureSpec</span><span class="o">.</span><span class="na">getSize</span><span class="o">(</span><span class="n">heightMeasureSpec</span><span class="o">);</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">setMeasuredDimension</span><span class="o">(</span><span class="n">resolveSizeAndState</span><span class="o">(</span><span class="n">maxWidth</span><span class="o">,</span> <span class="n">widthMeasureSpec</span><span class="o">,</span> <span class="mi">0</span><span class="o">),</span>
+</span><span class='line'>            <span class="n">resolveSizeAndState</span><span class="o">(</span><span class="n">maxHeight</span><span class="o">,</span> <span class="n">heightMeasureSpec</span><span class="o">,</span> <span class="mi">0</span><span class="o">));</span>
+</span><span class='line'><span class="o">}</span>
+</span><span class='line'>
+</span><span class='line'><span class="nd">@Override</span>
+</span><span class='line'><span class="kd">protected</span> <span class="kt">void</span> <span class="nf">onLayout</span><span class="o">(</span><span class="kt">boolean</span> <span class="n">changed</span><span class="o">,</span> <span class="kt">int</span> <span class="n">l</span><span class="o">,</span> <span class="kt">int</span> <span class="n">t</span><span class="o">,</span> <span class="kt">int</span> <span class="n">r</span><span class="o">,</span> <span class="kt">int</span> <span class="n">b</span><span class="o">)</span> <span class="o">{</span>
+</span><span class='line'>  <span class="n">mDragRange</span> <span class="o">=</span> <span class="n">getHeight</span><span class="o">()</span> <span class="o">-</span> <span class="n">mHeaderView</span><span class="o">.</span><span class="na">getHeight</span><span class="o">();</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">mHeaderView</span><span class="o">.</span><span class="na">layout</span><span class="o">(</span>
+</span><span class='line'>            <span class="mi">0</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">mTop</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">r</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">mTop</span> <span class="o">+</span> <span class="n">mHeaderView</span><span class="o">.</span><span class="na">getMeasuredHeight</span><span class="o">());</span>
+</span><span class='line'>
+</span><span class='line'>    <span class="n">mDescView</span><span class="o">.</span><span class="na">layout</span><span class="o">(</span>
+</span><span class='line'>            <span class="mi">0</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">mTop</span> <span class="o">+</span> <span class="n">mHeaderView</span><span class="o">.</span><span class="na">getMeasuredHeight</span><span class="o">(),</span>
+</span><span class='line'>            <span class="n">r</span><span class="o">,</span>
+</span><span class='line'>            <span class="n">mTop</span>  <span class="o">+</span> <span class="n">b</span><span class="o">);</span>
+</span><span class='line'><span class="o">}</span>
+</span></code></pre></td></tr></table></div></figure>
+
+
+<h1>Conclusion</h1>
+
+<p>The VDH is one of the useful but <strong>unknown</strong> class in the framework. Don’t hesitate to try it, use it and to appreciate it because it saves a lot of time and a lot of code!</p>
+</div>
+
+
+  <footer>
+    <p class="meta">
+      
+  
+
+<span class="byline author vcard">Posted by <span class="fn">Flavien Laurent</span></span>
+
+      
+
+
+
+
+<time class='entry-date' datetime='2013-08-28T18:56:00+02:00'><span class='date'><span class='date-month'>Aug</span> <span class='date-day'>28</span><span class='date-suffix'>th</span>, <span class='date-year'>2013</span></span> <span class='time'>6:56 pm</span></time>
+      
+
+<span class="categories">
+  
+    <a class='category' href='/blog/categories/drag/'>drag</a>, <a class='category' href='/blog/categories/navigation-drawer/'>navigation drawer</a>, <a class='category' href='/blog/categories/viewdraghelper/'>viewdraghelper</a>, <a class='category' href='/blog/categories/youtube/'>youtube</a>
+  
+</span>
+
+
+    </p>
+    
+      <div class="sharing">
+  
+  <a href="//twitter.com/share" class="twitter-share-button" data-url="http://flavienlaurent.com/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper/" data-via="flavienlaurent" data-counturl="http://flavienlaurent.com/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper/" >Tweet</a>
+  
+  
+  <div class="g-plusone" data-size="medium"></div>
+  
+  
+</div>
+
+    
+    <p class="meta">
+      
+        <a class="basic-alignment left" href="/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/" title="Previous Post: ViewOverlay: when, how and for what purpose?">&laquo; ViewOverlay: when, how and for what purpose?</a>
+      
+      
+        <a class="basic-alignment right" href="/blog/2013/11/20/making-your-action-bar-not-boring/" title="Next Post: Making your ActionBar not boring">Making your ActionBar not boring &raquo;</a>
+      
+    </p>
+  </footer>
+</article>
+
+  <section>
+    <h1>Comments</h1>
+    <div id="disqus_thread" aria-live="polite"><noscript>Please enable JavaScript to view the <a href="http://disqus.com/?ref_noscript">comments powered by Disqus.</a></noscript>
+</div>
+  </section>
+
+</div>
+
+<aside class="sidebar">
+  
+    <section>
+  <h1>Recent Posts</h1>
+  <ul id="recent_posts">
+    
+      <li class="post">
+        <a href="/blog/2014/12/05/screenshot_automation/">Screenshots Through Automation</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2014/01/31/spans/">Spans, a Powerful Concept.</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/11/20/making-your-action-bar-not-boring/">Making Your ActionBar Not Boring</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper/">Each Navigation Drawer Hides a ViewDragHelper</a>
+      </li>
+    
+      <li class="post">
+        <a href="/blog/2013/08/14/viewoverlay-when-how-and-for-what-purpose/">ViewOverlay: When, How and for What Purpose?</a>
+      </li>
+    
+  </ul>
+</section>
+
+<section>
+  <h1>GitHub Repos</h1>
+  <ul id="gh_repos">
+    <li class="loading">Status updating&#8230;</li>
+  </ul>
+  
+  <a href="https://github.com/flavienlaurent">@flavienlaurent</a> on GitHub
+  
+  <script type="text/javascript">
+    $(document).ready(function(){
+        if (!window.jXHR){
+            var jxhr = document.createElement('script');
+            jxhr.type = 'text/javascript';
+            jxhr.src = '/javascripts/libs/jXHR.js';
+            var s = document.getElementsByTagName('script')[0];
+            s.parentNode.insertBefore(jxhr, s);
+        }
+
+        github.showRepos({
+            user: 'flavienlaurent',
+            count: 2,
+            skip_forks: true,
+            target: '#gh_repos'
+        });
+    });
+  </script>
+  <script src="/javascripts/github.js" type="text/javascript"> </script>
+</section>
+
+
+
+<section class="googleplus">
+  <h1>
+    <a href="https://plus.google.com/103561222519914490723?rel=author">
+      <img src="http://www.google.com/images/icons/ui/gprofile_button-32.png" width="32" height="32">
+      Google+
+    </a>
+  </h1>
+</section>
+
+
+
+  
+</aside>
+
+
+    </div>
+  </div>
+  <footer role="contentinfo"><p>
+  Copyright &copy; 2015 - Flavien Laurent -
+  <span class="credit">Powered by <a href="http://octopress.org">Octopress</a></span>
+</p>
+
+</footer>
+  
+
+<script type="text/javascript">
+      var disqus_shortname = 'flavienlaurent';
+      
+        
+        // var disqus_developer = 1;
+        var disqus_identifier = 'http://flavienlaurent.com/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper/';
+        var disqus_url = 'http://flavienlaurent.com/blog/2013/08/28/each-navigation-drawer-hides-a-viewdraghelper/';
+        var disqus_script = 'embed.js';
+      
+    (function () {
+      var dsq = document.createElement('script'); dsq.type = 'text/javascript'; dsq.async = true;
+      dsq.src = '//' + disqus_shortname + '.disqus.com/' + disqus_script;
+      (document.getElementsByTagName('head')[0] || document.getElementsByTagName('body')[0]).appendChild(dsq);
+    }());
+</script>
+
+
+
+
+
+  <script type="text/javascript">
+    (function() {
+      var script = document.createElement('script'); script.type = 'text/javascript'; script.async = true;
+      script.src = 'https://apis.google.com/js/plusone.js';
+      var s = document.getElementsByTagName('script')[0]; s.parentNode.insertBefore(script, s);
+    })();
+  </script>
+
+
+
+  <script type="text/javascript">
+    (function(){
+      var twitterWidgets = document.createElement('script');
+      twitterWidgets.type = 'text/javascript';
+      twitterWidgets.async = true;
+      twitterWidgets.src = '//platform.twitter.com/widgets.js';
+      document.getElementsByTagName('head')[0].appendChild(twitterWidgets);
+    })();
+  </script>
+
+
+
+
+
+</body>
+</html>
